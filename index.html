@@ -332,6 +332,7 @@ body {
 .btn-clear:disabled { opacity: 0.25; cursor: not-allowed; }
 .brief-viewer { display: none; background: var(--surface); border: 1px solid var(--border); padding: 2.5rem; }
 .brief-viewer.show { display: block; }
+.brief-iframe { width: 100%; min-height: 70vh; border: 1px solid var(--border); border-radius: var(--radius); }
 .brief-viewer-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 1rem; }
 .brief-viewer-title { font-family: var(--serif); font-size: 1.6rem; font-weight: 400; }
 .brief-viewer-actions { display: flex; gap: 0.5rem; }
@@ -364,6 +365,10 @@ body {
 .note-block .note-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
 .sub-section { padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .sub-section-name { font-size: 11px; font-weight: 500; letter-spacing: 0.04em; margin-bottom: 0.65rem; }
+
+/* Vista solo lectura (admin iframe) */
+body.viewonly .pill, body.viewonly .radio-item, body.viewonly .scale-btn, body.viewonly .age-btn { pointer-events: none; cursor: default; }
+body.viewonly textarea, body.viewonly input { pointer-events: none; }
 .modal-overlay { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(250,250,248,0.85); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
 .modal-overlay.show { display: flex; }
 .modal { background: var(--surface); border: 1px solid var(--border); padding: 2rem; max-width: 340px; width: 90%; display: flex; flex-direction: column; gap: 1.25rem; }
@@ -1079,6 +1084,48 @@ let loginMode = 'client'; // 'client' | 'admin'
 
 const SESSION_KEY = 'hp_session';
 
+// ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
+var viewOnlyUser = (function() {
+  var p = new URLSearchParams(window.location.search);
+  var u = p.get('viewonly');
+  return (u && ['cervera','herrera','patroni'].indexOf(u) !== -1) ? u : null;
+})();
+
+function getStateForViewOnly(user) {
+  var state = null;
+  var latestKey = null, latestTime = 0;
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key && key.indexOf('hp_brief_' + user + '_FINAL_') === 0) {
+      var ts = parseInt(key.split('_FINAL_')[1], 10) || 0;
+      if (ts > latestTime) { latestTime = ts; latestKey = key; }
+    }
+  }
+  if (latestKey) try { state = JSON.parse(localStorage.getItem(latestKey)).state || null; } catch(e) {}
+  if (!state) try { state = JSON.parse(localStorage.getItem('hp_brief_' + user)); } catch(e) {}
+  return state;
+}
+
+function initViewOnly(user) {
+  currentUser = user;
+  var state = getStateForViewOnly(user);
+  if (state) restoreState(state);
+  var loginScreen = document.getElementById('loginScreen');
+  var topbar = document.getElementById('topbar');
+  var progressBar = document.getElementById('progressBar');
+  var mainApp = document.getElementById('mainApp');
+  if (loginScreen) loginScreen.classList.add('hidden');
+  if (topbar) { topbar.style.display = 'flex'; topbar.querySelector('.save-btn').style.display = 'none'; }
+  if (progressBar) progressBar.style.display = 'block';
+  if (mainApp) mainApp.style.display = 'block';
+  var tu = document.getElementById('topbarUser');
+  if (tu) tu.textContent = user.toUpperCase() + ' · Solo lectura';
+  document.body.classList.add('viewonly');
+  var zone = document.querySelector('.submit-zone');
+  if (zone) zone.style.display = 'none';
+  document.querySelectorAll('.viewonly textarea, .viewonly input[type=text]').forEach(function(el) { el.readOnly = true; });
+}
+
 // ── RUTAS POR HASH ──
 function getHash() {
   const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
@@ -1153,9 +1200,13 @@ function applyRoute() {
   }
 }
 
-window.addEventListener('hashchange', applyRoute);
-if (!window.location.hash) window.location.hash = 'login';
-applyRoute();
+window.addEventListener('hashchange', function() { if (viewOnlyUser) return; applyRoute(); });
+if (viewOnlyUser) {
+  initViewOnly(viewOnlyUser);
+} else {
+  if (!window.location.hash) window.location.hash = 'login';
+  applyRoute();
+}
 
 // ── LOGIN: mismo home — CERVERA/HERRERA/PATRONI = formulario, "cafeteria" = backoffice ──
 function handleLogin() {
@@ -1578,14 +1629,14 @@ function renderUserCards() {
   });
 }
 function viewBrief(user) {
-  const data = getUserData(user);
-  const label = USER_LABELS[user];
+  var label = USER_LABELS[user];
   document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
   document.getElementById('briefViewer').classList.add('show');
-  const content = document.getElementById('briefContent');
-  if (data.state) content.innerHTML = renderStateHTML(data.state);
-  else if (data.report) content.innerHTML = renderReportHTML(data.report);
-  else content.innerHTML = '<p class="empty-state">No hay datos disponibles para este usuario.</p>';
+  var content = document.getElementById('briefContent');
+  var path = window.location.pathname || '';
+  if (path === '' || path === '/') path = '/index.html';
+  var url = path + '?viewonly=' + user + '#brief';
+  content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + label + '"></iframe>';
   document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 function closeViewer() {
@@ -1669,11 +1720,14 @@ function renderStateHTML(state) {
   return html || '<p class="empty-state">Sin respuestas registradas.</p>';
 }
 function copyBrief() {
-  const el = document.getElementById('briefContent');
-  if (!el) return;
-  navigator.clipboard.writeText(el.innerText).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(() => btn.textContent = 'Copiar texto', 2000); }
+  var ifr = document.getElementById('briefIframe');
+  var text = '';
+  if (ifr && ifr.contentDocument && ifr.contentDocument.body) text = ifr.contentDocument.body.innerText;
+  else { var el = document.getElementById('briefContent'); if (el) text = el.innerText; }
+  if (!text || !text.trim()) text = 'El brief aún no ha cargado. Espere un momento y vuelva a intentar.';
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.querySelector('.btn-copy');
+    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(function() { btn.textContent = 'Copiar texto'; }, 2000); }
   });
 }
 function confirmClear(user) {
