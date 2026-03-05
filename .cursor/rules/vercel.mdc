@@ -1,0 +1,36 @@
+---
+description: Deploy a Vercel vía MCP — sin confirmación, reporte en una línea
+alwaysApply: true
+---
+
+# REGLA — DEPLOY A VERCEL VIA MCP
+
+El proyecto está conectado a Vercel vía MCP.
+
+**Configuración:**
+- Proyecto: `herrerapatronibrief`
+- Repo: `https://github.com/apuherrerafo/herrerapatronibrief.git`
+- Rama de producción: `main`
+
+---
+
+## Cuando el usuario diga:
+"despliega en vercel", "deploy vercel", "súbelo a vercel", "publica los cambios", "manda a producción" o variantes similares (español o inglés):
+
+1. Usa el **MCP de Vercel** para hacer el deploy (herramientas del servidor `vercel`).
+2. No pidas confirmación. Ejecuta directamente.
+3. Reporta en **una línea**:
+   - Éxito: **"✓ Deploy completado — [URL]"**
+   - Error: el mensaje de error (una línea o resumen breve).
+
+---
+
+## Cuando el usuario diga:
+"estado del deploy", "check vercel" o similar:
+
+1. Consulta vía MCP el estado del último deployment del proyecto.
+2. Reporta en **una línea** (URL, estado, o error).
+
+---
+
+**Nota:** El MCP de Vercel está en `.cursor/mcp.json` (`url`: `https://mcp.vercel.com`). Flujo ideal: cambio → "súbelo a github" → "deploy vercel" — dos frases y está publicado.

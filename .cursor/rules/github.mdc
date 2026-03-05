@@ -1,16 +1,25 @@
 ---
-description: Cómo subir el proyecto a GitHub cuando el usuario lo pida por chat
+description: Deploy a GitHub — ejecutar push sin confirmación cuando el usuario lo pida
 alwaysApply: true
 ---
 
-# Subir a GitHub desde el chat
+# REGLA — DEPLOY A GITHUB
 
-Cuando el usuario pida **subir a GitHub**, **hacer push**, **subir el proyecto** o similar:
+Cada vez que el usuario diga cualquiera de estas frases:
+- "súbelo a github", "subir a github", "deploy github", "push a github", "actualiza el repo", "sube los cambios"
+- O variantes similares en español o inglés
 
-1. **Intenta ejecutar el push** desde el agente: ejecuta la tarea o el script `push-github.bat` (por ejemplo: `cmd /c push-github.bat` en la carpeta del proyecto). Así, si el entorno tiene Git en el PATH, el push se hará sin que el usuario haga nada más.
+**Haz esto:**
 
-2. **Si el comando falla** (p. ej. "git no se reconoce" o error de PATH): indica al usuario que ejecute la tarea manualmente: **Ctrl+Shift+P** → **"Tasks: Run Task"** (o "Ejecutar tarea") → **"Subir a GitHub"**. Esa tarea corre en su terminal, donde Git sí está disponible, y hace init (si hace falta), add, commit y push a `https://github.com/apuherrerafo/herrerapatronibrief.git`.
+1. Ejecuta automáticamente en la terminal (en la carpeta del proyecto) estos comandos en orden:
+   - `git add .`
+   - `git commit -m "update"`
+   - `git push`
 
-3. **Repositorio:** `https://github.com/apuherrerafo/herrerapatronibrief.git`, rama `main`. El script `push-github.bat` inicializa el repo y el remoto si no existen.
+2. No pidas confirmación. No expliques qué vas a hacer. Solo ejecuta.
 
-Resumen: primero intenta el push por tu cuenta; si no es posible, pide al usuario que ejecute la tarea "Subir a GitHub".
+3. Reporta el resultado en una línea:
+   - Si todo va bien: **"✓ Subido a GitHub"**
+   - Si algo falla: el error (en una línea o resumen breve).
+
+**Configuración:** Repo `https://github.com/apuherrerafo/herrerapatronibrief.git`, rama `main`. Si el repo no está inicializado, usa antes `git init`, `git branch -M main`, `git remote add origin <url>`.

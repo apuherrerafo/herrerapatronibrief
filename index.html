@@ -6,30 +6,14 @@
 <title>Brief · H&P Design Studio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/main.css"/>
 <!-- Fallback since SF Pro isn't on Google Fonts -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --bg: #fafaf8;
-  --surface: #ffffff;
-  --border: #e5e5e0;
-  --border-focus: #1a1a1a;
-  --text: #1a1a1a;
-  --muted: #8a8a8a;
-  --subtle: #f0f0ec;
-  --accent: #1a1a1a;
-  --pill-active-bg: #1a1a1a;
-  --pill-active-text: #ffffff;
-  --radius: 2px;
-  --red: #c0392b;
-  --green: #27ae60;
-  --serif: 'Instrument Serif', Georgia, serif;
-  --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
-  --transition: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Variables y tema: main.css (tweakcn/shadcn) */
 
 html { scroll-behavior: smooth; }
 body {
@@ -46,28 +30,55 @@ body {
 /* ── LOGIN SCREEN ── */
 #loginScreen {
   position: fixed; inset: 0; z-index: 1000;
-  background: var(--bg);
+  overflow: hidden;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 0;
   transition: opacity 0.4s ease, transform 0.4s ease;
 }
+#loginScreen .login-screen-video {
+  position: absolute; inset: 0; z-index: -1;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+#loginScreen .login-screen-overlay {
+  position: absolute; inset: 0; z-index: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+#loginScreen .login-screen-content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0;
+}
+#loginScreen .login-panel {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex; flex-direction: column;
+  align-items: center;
+  max-width: 320px;
+}
 #loginScreen.hidden { opacity: 0; pointer-events: none; transform: translateY(-12px); }
 .login-backoffice {
-  position: absolute; top: 1.25rem; right: 1.5rem;
-  font-family: var(--sans); font-size: 11px; font-weight: 400;
+  position: absolute; top: 1.25rem; right: 1.5rem; z-index: 2;
+  font-family: var(--sans); font-size: 11px; font-weight: 500;
   letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--muted); background: none; border: none;
-  cursor: pointer;
-  transition: color var(--transition);
+  color: #fff; background: rgba(0, 0, 0, 0.75);
+  padding: 0.5rem 1rem; border-radius: 100px;
+  border: none; cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+  text-decoration: none;
 }
-.login-backoffice:hover { color: var(--text); }
+.login-backoffice:hover { background: rgba(0, 0, 0, 0.9); color: #fff; }
 
 .login-logo {
   font-family: var(--sans);
   font-size: 10px; font-weight: 500;
   letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--muted); margin-bottom: 3rem;
+  color: var(--muted); margin-bottom: 2rem;
 }
 .login-title {
   font-family: var(--serif);
@@ -86,7 +97,7 @@ body {
 .login-input {
   width: 100%;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: #fff;
   font-family: var(--sans);
   font-size: 14px; font-weight: 400;
   color: var(--text);
@@ -96,7 +107,7 @@ body {
   text-align: center; letter-spacing: 0.1em;
 }
 .login-input:focus { border-color: var(--border-focus); }
-.login-input::placeholder { color: #ccc; letter-spacing: 0; }
+.login-input::placeholder { color: #888; letter-spacing: 0; }
 .login-btn {
   background: var(--accent); color: #fff; border: none;
   font-family: var(--sans); font-size: 11px; font-weight: 500;
@@ -167,13 +178,20 @@ body {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.section-header { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 2rem; }
-.section-num { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; min-width: 22px; }
-.section-title { font-family: var(--serif); font-size: 1.55rem; font-weight: 400; }
+.section-header {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 2rem; margin-left: -1rem; margin-right: -1rem;
+  padding: 0.85rem 1rem;
+  background: var(--subtle);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 4px 4px 0;
+}
+.section-num { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; min-width: 22px; font-family: var(--sans); }
+.section-title { font-family: var(--sans); font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; color: var(--text); }
 
 /* ── Q BLOCK ── */
 .q-block { margin-bottom: 1.75rem; }
-.q-label { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.7rem; display: block; }
+.q-label { font-size: 12px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text); margin-bottom: 0.85rem; display: block; }
 .q-hint { font-size: 12px; color: var(--muted); margin-bottom: 0.7rem; line-height: 1.5; font-style: italic; }
 
 /* ── PILLS ── */
@@ -320,7 +338,7 @@ body {
 .brief-content { display: flex; flex-direction: column; gap: 0; }
 .brief-section { padding: 1.5rem 0; border-bottom: 1px solid var(--border); }
 .brief-section:last-child { border-bottom: none; }
-.brief-section-title { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+.brief-section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text); margin-bottom: 1rem; }
 .brief-rows { display: flex; flex-direction: column; gap: 0.6rem; }
 .brief-row { display: grid; grid-template-columns: 200px 1fr; gap: 1rem; align-items: baseline; }
 .brief-row-label { font-size: 11px; color: var(--muted); }
@@ -351,14 +369,22 @@ body {
 
 <!-- ── LOGIN ── -->
 <div id="loginScreen">
-  <button type="button" class="login-backoffice" id="loginBackofficeBtn" onclick="window.location.hash='admin'">Backoffice</button>
-  <p class="login-logo">Herrera &amp; Patroni · Design Studio</p>
-  <h1 class="login-title">Brief de<br/><em style="font-style:italic;color:#8a8a8a">Proyecto</em></h1>
-  <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
-  <div class="login-box">
-    <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-    <button class="login-btn" onclick="handleLogin()">Ingresar</button>
-    <p class="login-error" id="loginError"></p>
+  <video class="login-screen-video" autoplay loop muted playsinline aria-hidden="true">
+    <source src="/assets/videos/Flow_delpmaspu_.mp4" type="video/mp4"/>
+  </video>
+  <div class="login-screen-overlay" aria-hidden="true"></div>
+  <a href="#admin" class="login-backoffice" id="loginBackofficeBtn">Backoffice</a>
+  <div class="login-screen-content">
+    <div class="login-panel">
+      <p class="login-logo">Herrera &amp; Patroni · Design Studio</p>
+      <h1 class="login-title">Brief de<br/><em style="font-style:italic;color:#8a8a8a">Proyecto</em></h1>
+      <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
+      <div class="login-box">
+        <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
+        <button class="login-btn" onclick="handleLogin()">Ingresar</button>
+        <p class="login-error" id="loginError"></p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -379,8 +405,8 @@ body {
 
   <div class="hero">
     <p class="hero-eyebrow">Brief de Proyecto · 2026</p>
-    <h1 class="hero-title">Cuéntenos<br/><em>cómo viven.</em></h1>
-    <p class="hero-desc">Antes de diseñar, necesitamos entender su punto de partida real. Espacio por espacio — menos de 5 minutos.</p>
+    <h1 class="hero-title">HERRERA &amp; PATRONI</h1>
+    <p class="hero-desc">Antes de diseñar, necesitamos entender su punto de partida real. Espacio por espacio — menos de 10 min.</p>
   </div>
 
   <form id="briefForm">
@@ -926,13 +952,13 @@ body {
     <div class="brief-content" id="briefContent"></div>
   </div>
 </div>
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
+<div class="modal-overlay" id="modalOverlay" data-clear-user="">
+  <div class="modal" onclick="event.stopPropagation()">
     <h3 class="modal-title">Limpiar brief</h3>
     <p class="modal-desc" id="modalDesc">¿Confirmas que quieres borrar el brief de este usuario? Esta acción no se puede deshacer.</p>
     <div class="modal-actions">
-      <button class="btn-confirm-clear" id="btnConfirmClear">Sí, limpiar</button>
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button type="button" class="btn-confirm-clear" id="btnConfirmClear">Sí, limpiar</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1270,11 +1296,25 @@ function saveProgress() {
   }, 2000);
 }
 
+function clearFormState() {
+  document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sub-field').forEach(el => el.classList.remove('open'));
+  document.querySelectorAll('.radio-item').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.scale-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.age-btn').forEach(b => b.classList.remove('active'));
+  var form = document.getElementById('briefForm');
+  if (form) {
+    form.querySelectorAll('textarea, input[type=text]').forEach(function(f) { f.value = ''; });
+  }
+}
+
 function loadProgress() {
   if (!currentUser) return;
   const raw = localStorage.getItem('hp_brief_' + currentUser);
   if (raw) {
     try { restoreState(JSON.parse(raw)); } catch(e) {}
+  } else {
+    clearFormState();
   }
 }
 
@@ -1504,22 +1544,33 @@ function copyBrief() {
   });
 }
 function confirmClear(user) {
+  var overlay = document.getElementById('modalOverlay');
+  overlay.dataset.clearUser = user;
   pendingClearUser = user;
   document.getElementById('modalDesc').textContent = '¿Confirmas que quieres borrar todos los datos del brief de ' + USER_LABELS[user] + '? Esta acción no se puede deshacer.';
-  document.getElementById('modalOverlay').classList.add('show');
-  document.getElementById('btnConfirmClear').onclick = () => executeClear(user);
+  overlay.classList.add('show');
+  document.getElementById('btnConfirmClear').onclick = function() { executeClear(); };
 }
 function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
+  var overlay = document.getElementById('modalOverlay');
+  overlay.classList.remove('show');
+  overlay.removeAttribute('data-clear-user');
   pendingClearUser = null;
 }
-function executeClear(user) {
-  const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('hp_brief_' + user)) keysToRemove.push(key);
+function executeClear() {
+  var overlay = document.getElementById('modalOverlay');
+  var user = overlay.dataset.clearUser || pendingClearUser;
+  if (!user) return;
+  localStorage.removeItem('hp_brief_' + user);
+  localStorage.removeItem('hp_brief_' + user + '_report');
+  var keysToRemove = [];
+  for (var i = localStorage.length - 1; i >= 0; i--) {
+    var key = localStorage.key(i);
+    if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
+      keysToRemove.push(key);
+    }
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
   closeViewer();
   renderUserCards();

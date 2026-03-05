@@ -5,22 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Admin · H&P Design Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="/assets/main.css"/>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #fafaf8;
-  --surface: #ffffff;
-  --border: #e5e5e0;
-  --text: #1a1a1a;
-  --muted: #8a8a8a;
-  --subtle: #f4f4f0;
-  --red: #c0392b;
-  --green: #27ae60;
-  --serif: 'Instrument Serif', Georgia, serif;
-  --sans: 'DM Sans', -apple-system, system-ui, sans-serif;
-  --radius: 2px;
-  --transition: 0.18s cubic-bezier(0.4,0,0.2,1);
-}
+
+/* Variables y tema: main.css (tweakcn/shadcn) */
+
 html { scroll-behavior: smooth; }
 body {
   background: var(--bg);
@@ -36,10 +26,34 @@ body {
 /* ── LOGIN ── */
 #loginScreen {
   position: fixed; inset: 0; z-index: 1000;
-  background: var(--bg);
+  overflow: hidden;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center; gap: 0;
   transition: opacity 0.4s ease, transform 0.4s ease;
+}
+#loginScreen .login-screen-video {
+  position: absolute; inset: 0; z-index: -1;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+#loginScreen .login-screen-overlay {
+  position: absolute; inset: 0; z-index: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+#loginScreen .login-screen-content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0;
+}
+#loginScreen .login-panel {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  display: flex; flex-direction: column;
+  align-items: center;
+  max-width: 320px;
 }
 #loginScreen.hidden { opacity: 0; pointer-events: none; transform: translateY(-10px); }
 .login-logo { font-size: 10px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 2.5rem; }
@@ -47,13 +61,13 @@ body {
 .login-subtitle { font-size: 13px; color: var(--muted); text-align: center; margin-bottom: 2rem; }
 .login-box { display: flex; flex-direction: column; gap: 0.65rem; width: 100%; max-width: 260px; }
 .login-input {
-  width: 100%; border: 1px solid var(--border); background: var(--surface);
+  width: 100%; border: 1px solid var(--border); background: #fff;
   font-family: var(--sans); font-size: 14px; font-weight: 400; color: var(--text);
   padding: 0.75rem 1rem; outline: none; border-radius: var(--radius);
   transition: border-color var(--transition); text-align: center; letter-spacing: 0.1em;
 }
 .login-input:focus { border-color: var(--text); }
-.login-input::placeholder { color: #ccc; letter-spacing: 0; }
+.login-input::placeholder { color: #888; letter-spacing: 0; }
 .login-btn {
   background: var(--text); color: #fff; border: none;
   font-family: var(--sans); font-size: 11px; font-weight: 500;
@@ -223,13 +237,21 @@ body {
 
 <!-- LOGIN: solo contraseña "cafeteria" -->
 <div id="loginScreen">
-  <p class="login-logo">Herrera &amp; Patroni · Admin</p>
-  <h1 class="login-title">Back<em style="font-style:italic;color:#8a8a8a">office</em></h1>
-  <p class="login-subtitle">Código de acceso administrativo</p>
-  <div class="login-box">
-    <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-    <button class="login-btn" onclick="handleLogin()">Ingresar</button>
-    <p class="login-error" id="loginError"></p>
+  <video class="login-screen-video" autoplay loop muted playsinline aria-hidden="true">
+    <source src="/assets/videos/Flow_delpmaspu_.mp4" type="video/mp4"/>
+  </video>
+  <div class="login-screen-overlay" aria-hidden="true"></div>
+  <div class="login-screen-content">
+    <div class="login-panel">
+      <p class="login-logo">Herrera &amp; Patroni · Admin</p>
+      <h1 class="login-title">Back<em style="font-style:italic;color:#8a8a8a">office</em></h1>
+      <p class="login-subtitle">Código de acceso administrativo</p>
+      <div class="login-box">
+        <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
+        <button class="login-btn" onclick="handleLogin()">Ingresar</button>
+        <p class="login-error" id="loginError"></p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -268,13 +290,13 @@ body {
 </div>
 
 <!-- CONFIRM MODAL -->
-<div class="modal-overlay" id="modalOverlay">
-  <div class="modal">
+<div class="modal-overlay" id="modalOverlay" data-clear-user="">
+  <div class="modal" onclick="event.stopPropagation()">
     <h3 class="modal-title">Limpiar brief</h3>
     <p class="modal-desc" id="modalDesc">¿Confirmas que quieres borrar el brief de este usuario? Esta acción no se puede deshacer.</p>
     <div class="modal-actions">
-      <button class="btn-confirm-clear" id="btnConfirmClear">Sí, limpiar</button>
-      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button type="button" class="btn-confirm-clear" id="btnConfirmClear">Sí, limpiar</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -520,25 +542,36 @@ function copyBrief() {
 
 // ── CLEAR ──
 function confirmClear(user) {
+  const overlay = document.getElementById('modalOverlay');
+  overlay.dataset.clearUser = user;
   pendingClearUser = user;
   document.getElementById('modalDesc').textContent =
     '¿Confirmas que quieres borrar todos los datos del brief de ' + USER_LABELS[user] + '? Esta acción no se puede deshacer.';
-  document.getElementById('modalOverlay').classList.add('show');
-  document.getElementById('btnConfirmClear').onclick = () => executeClear(user);
+  overlay.classList.add('show');
+  document.getElementById('btnConfirmClear').onclick = function() { executeClear(); };
 }
 
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('show');
+  document.getElementById('modalOverlay').removeAttribute('data-clear-user');
   pendingClearUser = null;
 }
 
-function executeClear(user) {
+function executeClear() {
+  const overlay = document.getElementById('modalOverlay');
+  const user = overlay.dataset.clearUser || pendingClearUser;
+  if (!user) return;
+  // Borrar todas las claves de este usuario
+  localStorage.removeItem('hp_brief_' + user);
+  localStorage.removeItem('hp_brief_' + user + '_report');
   const keysToRemove = [];
-  for (let i = 0; i < localStorage.length; i++) {
+  for (let i = localStorage.length - 1; i >= 0; i--) {
     const key = localStorage.key(i);
-    if (key && key.startsWith('hp_brief_' + user)) keysToRemove.push(key);
+    if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
+      keysToRemove.push(key);
+    }
   }
-  keysToRemove.forEach(k => localStorage.removeItem(k));
+  keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
   closeViewer();
   renderUserCards();

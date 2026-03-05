@@ -1,4 +1,7 @@
 {
+  "buildCommand": "npm install && npm run build:css",
+  "outputDirectory": ".",
+  "installCommand": "npm install",
   "cleanUrls": true,
   "trailingSlash": false,
   "routes": [
