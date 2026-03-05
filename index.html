@@ -159,13 +159,17 @@ body {
 /* ── HERO ── */
 .hero { padding-bottom: 3.5rem; border-bottom: 1px solid var(--border); margin-bottom: 3.5rem; }
 .hero-eyebrow { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 1.25rem; }
-.hero-title {
-  font-family: var(--serif);
-  font-size: clamp(2.5rem, 6vw, 4rem);
-  font-weight: 400; line-height: 1.04;
+.hero-banner {
+  width: 100%;
+  height: 72px;
   margin-bottom: 1.5rem;
+  background-image: url(/assets/banner-hero.png);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  overflow: hidden;
 }
-.hero-title em { font-style: italic; color: var(--muted); }
 .hero-desc { font-size: 13px; color: var(--muted); max-width: 420px; line-height: 1.75; }
 
 /* ── SECTION ── */
@@ -359,9 +363,59 @@ body {
 @media (max-width: 600px) {
   .topbar { padding: 0 1rem; }
   .wrapper { padding: 100px 1rem 80px; }
-  .hero-title { font-size: 2.4rem; }
+  .hero-banner { height: 64px; }
   .brief-row { grid-template-columns: 1fr; gap: 0.2rem; }
   .brief-viewer { padding: 1.5rem; }
+}
+
+/* Mobile: base 420px, 100% scale */
+@media (max-width: 420px) {
+  html { overflow-x: hidden; }
+  .topbar { padding: 0 0.75rem; height: 48px; }
+  .topbar-logo { font-size: 9px; letter-spacing: 0.12em; }
+  .topbar-user, .save-btn { font-size: 10px; }
+  .progress-bar { top: 48px; }
+  .wrapper { max-width: 100%; padding: 72px 0.75rem 60px; }
+  .hero { padding-bottom: 2.5rem; margin-bottom: 2.5rem; }
+  .hero-eyebrow { font-size: 9px; letter-spacing: 0.18em; }
+  .hero-banner { height: 56px; margin-bottom: 1rem; }
+  .hero-desc { font-size: 12px; max-width: 100%; }
+  .section { margin-bottom: 2rem; padding-bottom: 2rem; }
+  .section-header { margin-left: 0; margin-right: 0; padding: 0.65rem 0.75rem; }
+  .section-title { font-size: 1rem; }
+  .q-block { margin-bottom: 1.5rem; }
+  .q-label { font-size: 11px; margin-bottom: 0.65rem; }
+  .pill-row { gap: 0.35rem; }
+  .pill { padding: 0.5rem 0.75rem; font-size: 12px; min-height: 44px; align-items: center; justify-content: center; }
+  .radio-item { padding: 0.65rem 0; min-height: 44px; }
+  .text-field { font-size: 16px; padding: 0.6rem 0; }
+  .scale-btn { width: 44px; height: 40px; font-size: 13px; }
+  .scale-row { gap: 0.4rem; }
+  .age-btn { width: 48px; height: 42px; font-size: 14px; }
+  .submit-zone { padding-top: 2rem; }
+  .btn-submit { padding: 0.85rem 2rem; min-height: 48px; }
+  #loginScreen .login-panel { max-width: 100%; padding: 1.5rem 1rem; margin: 0 0.75rem; }
+  .login-backoffice { top: 0.75rem; right: 0.75rem; padding: 0.4rem 0.75rem; font-size: 10px; }
+  .login-title { font-size: clamp(1.75rem, 8vw, 2.25rem); }
+  .login-subtitle { font-size: 12px; margin-bottom: 1.5rem; }
+  .login-box { max-width: 100%; }
+  .login-input { min-height: 48px; font-size: 16px; }
+  .login-btn { min-height: 48px; padding: 0.75rem 1rem; }
+  #successScreen { padding: 1rem; }
+  .success-title { font-size: 2.2rem; }
+  .success-sub { max-width: 100%; font-size: 12px; }
+  .modal { width: calc(100% - 1.5rem); max-width: none; padding: 1.5rem; margin: 0 0.75rem; }
+  .brief-viewer { padding: 1rem; }
+  .brief-viewer-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+  .brief-viewer-title { font-size: 1.35rem; }
+  .brief-row { grid-template-columns: 1fr; gap: 0.35rem; }
+  .users-grid { grid-template-columns: 1fr; }
+  .user-card { padding: 1.25rem; }
+  .user-name { font-size: 1.15rem; }
+  .user-actions { flex-direction: column; }
+  .btn-view, .btn-clear { min-height: 44px; }
+  .page-header { margin-bottom: 2rem; padding-bottom: 1.5rem; }
+  .page-title { font-size: 1.75rem; }
 }
 </style>
 </head>
@@ -405,7 +459,7 @@ body {
 
   <div class="hero">
     <p class="hero-eyebrow">Brief de Proyecto · 2026</p>
-    <h1 class="hero-title">HERRERA &amp; PATRONI</h1>
+    <div class="hero-banner" role="img" aria-label="Herrera &amp; Patroni"></div>
     <p class="hero-desc">Antes de diseñar, necesitamos entender su punto de partida real. Espacio por espacio — menos de 10 min.</p>
   </div>
 
