@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>H&P Brief — Abrir páginas</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 2rem; max-width: 520px; margin: 0 auto; line-height: 1.6; }
+    h1 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .link-btn { display: block; margin: 0.75rem 0; padding: 0.85rem 1rem; background: #1a1a1a; color: #fff; text-decoration: none; border-radius: 4px; text-align: center; border: none; cursor: pointer; font-size: 15px; width: 100%; }
+    .link-btn:hover { opacity: 0.9; }
+    .admin { background: #444; }
+    .urls { margin-top: 1.5rem; padding: 1rem; background: #f4f4f0; border-radius: 4px; font-size: 12px; word-break: break-all; }
+    .urls code { display: block; margin: 0.4rem 0; }
+    p { color: #666; font-size: 14px; margin-top: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>H&P Brief — Abrir páginas</h1>
+  <p>Haz clic en el botón (se abre en la misma pestaña):</p>
+  <button type="button" class="link-btn" id="btnBrief">Formulario de brief (clientes)</button>
+  <button type="button" class="link-btn admin" id="btnAdmin">Panel admin (cafeteria)</button>
+  <div class="urls">
+    <p style="margin-top:0;color:#666">Si no se abre, copia y pega esta dirección en la barra del navegador:</p>
+    <code id="urlBrief"></code>
+    <code id="urlAdmin"></code>
+  </div>
+<script>
+(function() {
+  var base = location.href;
+  if (base.indexOf('?') !== -1) base = base.split('?')[0];
+  if (base.indexOf('#') !== -1) base = base.split('#')[0];
+  if (!base.endsWith('/')) base = base.replace(/\/[^/]*$/, '/');
+  var urlBrief = base + 'index.html';
+  var urlAdmin = base + 'admin.html';
+
+  document.getElementById('urlBrief').textContent = urlBrief;
+  document.getElementById('urlAdmin').textContent = urlAdmin;
+
+  document.getElementById('btnBrief').onclick = function() { location.href = urlBrief; };
+  document.getElementById('btnAdmin').onclick = function() { location.href = urlAdmin; };
+})();
+</script>
+</body>
+</html>

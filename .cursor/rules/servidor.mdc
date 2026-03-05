@@ -1,0 +1,14 @@
+---
+description: Cómo prender el servidor local cuando el usuario lo pida
+alwaysApply: true
+---
+
+# Servidor local H&P Brief
+
+Cuando el usuario pida **abrir**, **prender** o **iniciar** el servidor para revisar el proyecto:
+
+1. Indícale que ejecute la **tarea de Cursor**: **Ctrl+Shift+P** → **"Tasks: Run Task"** (o "Ejecutar tarea") → **"Servidor H&P Brief"**.
+2. El servidor se abrirá en **su** terminal integrada (su PATH, su localhost) en http://localhost:8080.
+3. Opcional: que ejecute también la tarea **"Abrir H&P en navegador"** para abrir la URL, o que abra manualmente http://localhost:8080 y http://localhost:8080/admin.html.
+
+No intentes ejecutar `npx serve` desde el agente: ese comando corre en un entorno donde no hay PATH y el servidor no sería accesible desde el navegador del usuario. La tarea definida en `.vscode/tasks.json` sí corre en la terminal del usuario y funciona.
