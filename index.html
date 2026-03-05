@@ -1653,25 +1653,42 @@ function downloadBriefPDF(user) {
     alert('No hay datos para descargar.');
     return;
   }
-  var jsPDF = window.jspdf.jsPDF;
-  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  var label = USER_LABELS[user];
-  doc.setFontSize(14);
-  doc.text('BRIEF H&P · ' + label, 20, 20);
-  doc.setFontSize(10);
-  var margin = 20;
-  var pageW = doc.internal.pageSize.getWidth();
-  var maxW = pageW - margin * 2;
-  var y = 28;
-  var lineHeight = 6;
-  var lines = text.split('\n');
-  lines.forEach(function(line) {
-    if (y > 270) { doc.addPage(); y = 20; }
-    var wrapped = doc.splitTextToSize(line || ' ', maxW);
-    wrapped.forEach(function(ln) { doc.text(ln, margin, y); y += lineHeight; });
-  });
-  var filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-  doc.save(filename);
+  try {
+    var JsPDF = (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof window.jsPDF !== 'undefined' ? window.jsPDF : null);
+    if (!JsPDF) {
+      alert('Error: no se pudo cargar la librería PDF. Comprueba tu conexión o recarga la página.');
+      return;
+    }
+    var doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    var label = USER_LABELS[user];
+    doc.setFontSize(14);
+    doc.text('BRIEF H&P · ' + label, 20, 20);
+    doc.setFontSize(10);
+    var margin = 20;
+    var pageW = doc.internal.pageSize.getWidth();
+    var maxW = pageW - margin * 2;
+    var y = 28;
+    var lineHeight = 6;
+    var lines = text.split('\n');
+    lines.forEach(function(line) {
+      if (y > 270) { doc.addPage(); y = 20; }
+      var wrapped = doc.splitTextToSize(line || ' ', maxW);
+      wrapped.forEach(function(ln) { doc.text(ln, margin, y); y += lineHeight; });
+    });
+    var filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+    var blob = doc.output('blob');
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error('downloadBriefPDF', e);
+    alert('Error al generar el PDF: ' + (e && e.message ? e.message : String(e)));
+  }
 }
 function confirmClear(user) {
   var overlay = document.getElementById('modalOverlay');
