@@ -1086,6 +1086,11 @@ const SESSION_KEY = 'hp_session';
 
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
 var viewOnlyUser = (function() {
+  var h = (window.location.hash || '').replace(/^#/, '');
+  if (h.indexOf('viewonly/') === 0) {
+    var u = h.split('/')[1];
+    if (u && ['cervera','herrera','patroni'].indexOf(u) !== -1) return u;
+  }
   var p = new URLSearchParams(window.location.search);
   var u = p.get('viewonly');
   return (u && ['cervera','herrera','patroni'].indexOf(u) !== -1) ? u : null;
@@ -1635,7 +1640,7 @@ function viewBrief(user) {
   var content = document.getElementById('briefContent');
   var path = window.location.pathname || '';
   if (path === '' || path === '/') path = '/index.html';
-  var url = path + '?viewonly=' + user + '#brief';
+  var url = path + '#viewonly/' + user;
   content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + label + '"></iframe>';
   document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
