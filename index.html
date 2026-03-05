@@ -1113,16 +1113,16 @@ function getStateForViewOnly(user) {
 
 function initViewOnly(user) {
   currentUser = user;
-  var state = getStateForViewOnly(user);
-  if (state) restoreState(state);
   var loginScreen = document.getElementById('loginScreen');
+  var mainApp = document.getElementById('mainApp');
+  if (loginScreen) { loginScreen.classList.add('hidden'); loginScreen.style.display = 'none'; }
+  if (mainApp) mainApp.style.display = 'block';
   var topbar = document.getElementById('topbar');
   var progressBar = document.getElementById('progressBar');
-  var mainApp = document.getElementById('mainApp');
-  if (loginScreen) loginScreen.classList.add('hidden');
-  if (topbar) { topbar.style.display = 'flex'; topbar.querySelector('.save-btn').style.display = 'none'; }
+  if (topbar) { topbar.style.display = 'flex'; var sb = topbar.querySelector('.save-btn'); if (sb) sb.style.display = 'none'; }
   if (progressBar) progressBar.style.display = 'block';
-  if (mainApp) mainApp.style.display = 'block';
+  var state = getStateForViewOnly(user);
+  if (state) restoreState(state);
   var tu = document.getElementById('topbarUser');
   if (tu) tu.textContent = user.toUpperCase() + ' · Solo lectura';
   document.body.classList.add('viewonly');
@@ -1638,9 +1638,7 @@ function viewBrief(user) {
   document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
   document.getElementById('briefViewer').classList.add('show');
   var content = document.getElementById('briefContent');
-  var path = window.location.pathname || '';
-  if (path === '' || path === '/') path = '/index.html';
-  var url = path + '#viewonly/' + user;
+  var url = (window.location.origin || '') + '/#viewonly/' + user;
   content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + label + '"></iframe>';
   document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

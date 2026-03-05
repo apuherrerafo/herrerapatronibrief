@@ -466,7 +466,7 @@ function viewBrief(user) {
   document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
   document.getElementById('briefViewer').classList.add('show');
   const content = document.getElementById('briefContent');
-  const url = window.location.origin + '/index.html#viewonly/' + user;
+  const url = window.location.origin + '/#viewonly/' + user;
   content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + escapeHtml(label) + '"></iframe>';
   document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
