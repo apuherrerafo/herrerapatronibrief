@@ -6,6 +6,7 @@
 <title>Admin · H&P Design Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/main.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -337,17 +338,6 @@ body {
 
   <div class="users-grid" id="usersGrid"></div>
 
-  <div class="brief-viewer" id="briefViewer">
-    <div class="brief-viewer-header">
-      <h2 class="brief-viewer-title" id="viewerTitle">Brief</h2>
-      <div class="brief-viewer-actions">
-        <button class="btn-copy" onclick="copyBrief()">Copiar texto</button>
-        <button class="btn-close" onclick="closeViewer()">Cerrar</button>
-      </div>
-    </div>
-    <div class="brief-content" id="briefContent"></div>
-  </div>
-
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -397,7 +387,6 @@ function logout() {
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginInput').value = '';
   document.getElementById('loginError').textContent = '';
-  closeViewer();
 }
 
 // ── GET USER DATA ──
@@ -452,7 +441,7 @@ function renderUserCards() {
       </div>
       <p class="user-meta">${escapeHtml(metaText)}</p>
       <div class="user-actions">
-        <button class="btn-view" ${data.isEmpty ? 'disabled' : ''} onclick="viewBrief('${user}')">Ver brief</button>
+        <button class="btn-view" ${data.isEmpty ? 'disabled' : ''} onclick="downloadBriefPDF('${user}')">Descargar brief</button>
         <button class="btn-clear" ${data.isEmpty ? 'disabled' : ''} onclick="confirmClear('${user}')">Limpiar</button>
       </div>
     `;
@@ -460,178 +449,58 @@ function renderUserCards() {
   });
 }
 
-// ── VIEW BRIEF (formulario real en solo lectura, mismo que ve el cliente) ──
-function viewBrief(user) {
+// ── TEXTO DEL BRIEF (para PDF) ──
+const REPORT_LABELS = {
+  'pills__sala-muebles':'Sala · Muebles a reutilizar','radio__sala-tv-group':'Sala · TV','text__sala_tv_detalle':'Sala · TV (detalle)','radio__sala-veg-group':'Sala · Vegetación','text__sala_veg_detalle':'Sala · Vegetación (detalle)','text__sala_notas':'Sala · Notas','scale__sala_prioridad':'Sala · Prioridad',
+  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-enchapes':'Cocina · Enchapes','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
+  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-nivel-group':'Dorm. Principal · Intervención','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
+  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','age__cristobal':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mobiliario evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
+  'pills__family-muebles':'Family Room · Muebles a reutilizar','pills__family-uso':'Family Room · Uso principal','text__family_uso_otros':'Family Room · Uso (otros)','radio__family-tv-group':'Family Room · TV','text__family_tv_detalle':'Family Room · TV (detalle)','text__family_notas':'Family Room · Notas','scale__family_prioridad':'Family Room · Prioridad',
+  'radio__bano1-nivel-group':'Baño Principal · Intervención','pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','radio__bano2-nivel-group':'Baño Secundario · Intervención','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','radio__bano3-nivel-group':'Baño de Visita · Intervención','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
+  'pills__musthaves-list':'Must-Haves','text__musthaves_otros':'Must-Haves (otros)','radio__puertas-grupo':'Puertas interiores','text__puertas_detalle':'Puertas (detalle)','text__notas_finales':'Notas finales',
+};
+
+function getBriefText(user) {
+  const data = getUserData(user);
+  if (data.report) return data.report;
+  const state = data.state;
+  if (!state || !Object.keys(state).length) return 'Sin datos para este usuario.';
   const label = USER_LABELS[user];
-  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
-  document.getElementById('briefViewer').classList.add('show');
-  const content = document.getElementById('briefContent');
-  const url = window.location.origin + '/#viewonly/' + user;
-  content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + escapeHtml(label) + '"></iframe>';
-  document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function closeViewer() {
-  document.getElementById('briefViewer').classList.remove('show');
-  document.getElementById('briefContent').innerHTML = '';
-}
-
-// ── RENDER REPORT (fallback for text-only reports) ──
-function renderReportHTML(report) {
-  return '<div class="report-fallback">' + escapeHtml(report) + '</div>';
-}
-
-// ── RENDER STATE (visual brief viewer) ──
-function renderStateHTML(state) {
-  if (!state || !Object.keys(state).length) return '<p class="empty-state">Borrador vacío — el usuario no ha ingresado datos aún.</p>';
-
-  const rooms = [
-    { name: 'Sala – Comedor', priorityKey: 'scale__sala_prioridad',
-      chips: [{ key: 'pills__sala-muebles', label: 'Muebles a reutilizar' }],
-      decisions: [{ key: 'radio__sala-tv-group', label: 'TV' }, { key: 'radio__sala-veg-group', label: 'Vegetación' }],
-      notes: [{ key: 'text__sala_muebles_otros', label: 'Otros muebles' }, { key: 'text__sala_tv_detalle', label: 'Detalle TV' }, { key: 'text__sala_veg_detalle', label: 'Detalle vegetación' }, { key: 'text__sala_notas', label: 'Notas' }],
-    },
-    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad',
-      chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__cocina-enchapes', label: 'Enchapes' }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales' }],
-      decisions: [{ key: 'radio__cocina-nivel-group', label: 'Intervención' }],
-      notes: [{ key: 'text__cocina_muebles_otros', label: 'Otros muebles' }, { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' }, { key: 'text__cocina_notas', label: 'Notas' }],
-    },
-    { name: 'Dormitorio Principal', priorityKey: 'scale__dorm1_prioridad',
-      chips: [{ key: 'pills__dorm1-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__wc-el', label: 'Closet de él' }, { key: 'pills__wc-ella', label: 'Closet de ella' }],
-      decisions: [{ key: 'radio__dorm1-nivel-group', label: 'Intervención' }, { key: 'radio__dorm1-tv-group', label: 'TV' }],
-      notes: [{ key: 'text__dorm1_muebles_otros', label: 'Otros muebles' }, { key: 'text__dorm1_tv_detalle', label: 'Detalle TV' }, { key: 'text__wc_el_otros', label: 'Closet de él — otros' }, { key: 'text__wc_el_notas', label: 'Closet de él — notas' }, { key: 'text__wc_ella_otros', label: 'Closet de ella — otros' }, { key: 'text__wc_ella_notas', label: 'Closet de ella — notas' }, { key: 'text__dorm1_notas', label: 'Notas' }],
-    },
-    { name: 'Dormitorio Cristóbal', priorityKey: 'scale__cristobal_prioridad',
-      chips: [{ key: 'pills__cristobal-muebles', label: 'Muebles a reutilizar' }],
-      decisions: [{ key: 'age__cristobal', label: 'Edad' }, { key: 'radio__cristobal-evol-group', label: 'Mob. evolutivo' }],
-      notes: [{ key: 'text__cristobal_muebles_otros', label: 'Otros muebles' }, { key: 'text__cristobal_notas', label: 'Notas' }],
-    },
-    { name: 'Family Room', priorityKey: 'scale__family_prioridad',
-      chips: [{ key: 'pills__family-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__family-uso', label: 'Uso principal' }],
-      decisions: [{ key: 'radio__family-tv-group', label: 'TV' }],
-      notes: [{ key: 'text__family_muebles_otros', label: 'Otros muebles' }, { key: 'text__family_uso_otros', label: 'Otros usos' }, { key: 'text__family_tv_detalle', label: 'Detalle TV' }, { key: 'text__family_notas', label: 'Notas' }],
-    },
-  ];
-
-  const banos = [
-    { name: 'Baño Principal',
-      decisions: [{ key: 'radio__bano1-nivel-group', label: 'Intervención' }],
-      chips: [{ key: 'pills__bano1-equip', label: 'Equipamiento' }],
-      notes: [{ key: 'text__bano1_equip_otros', label: 'Otros' }, { key: 'text__bano1_notas', label: 'Notas' }],
-    },
-    { name: 'Baño Secundario',
-      decisions: [{ key: 'radio__bano2-nivel-group', label: 'Intervención' }],
-      chips: [{ key: 'pills__bano2-equip', label: 'Equipamiento' }],
-      notes: [{ key: 'text__bano2_equip_otros', label: 'Otros' }, { key: 'text__bano2_notas', label: 'Notas' }],
-    },
-    { name: 'Baño de Visita',
-      decisions: [{ key: 'radio__bano3-nivel-group', label: 'Intervención' }],
-      chips: [{ key: 'pills__bano3-equip', label: 'Equipamiento' }],
-      notes: [{ key: 'text__bano3_equip_otros', label: 'Otros' }, { key: 'text__bano3_notas', label: 'Notas' }],
-    },
-  ];
-
-  function renderChips(val) {
-    const items = Array.isArray(val) ? val : [val];
-    return items.map(v => '<span class="chip">' + escapeHtml(v) + '</span>').join('');
-  }
-
-  function renderFields(chips, decisions, notes) {
-    let h = '';
-    chips.forEach(({ key, label }) => {
-      const val = state[key];
-      if (!val || (Array.isArray(val) && !val.length)) return;
-      h += '<div class="field-group"><p class="field-label">' + escapeHtml(label) + '</p><div class="chip-row">' + renderChips(val) + '</div></div>';
-    });
-    const dh = decisions.map(({ key, label }) => {
-      const val = state[key];
-      if (!val) return '';
-      return '<span class="decision-badge"><span class="decision-badge-label">' + escapeHtml(label) + ':</span> ' + escapeHtml(val) + '</span>';
-    }).filter(Boolean).join('');
-    if (dh) h += '<div class="decision-row">' + dh + '</div>';
-    notes.forEach(({ key, label }) => {
-      const val = state[key];
-      if (!val) return;
-      h += '<div class="field-group"><div class="note-block"><p class="note-label">' + escapeHtml(label) + '</p>' + escapeHtml(val) + '</div></div>';
-    });
-    return h;
-  }
-
-  let html = '';
-
-  // Priority summary
-  const priorities = rooms
-    .map(r => ({ name: r.name, val: parseInt(state[r.priorityKey]) || 0 }))
-    .filter(p => p.val > 0)
-    .sort((a, b) => b.val - a.val);
-  if (priorities.length) {
-    html += '<div class="priority-summary">';
-    priorities.forEach(({ name, val }) => {
-      let bars = '';
-      for (let i = 1; i <= 5; i++) bars += '<span class="priority-bar-seg' + (i <= val ? ' filled' : '') + '"></span>';
-      html += '<div class="priority-card"><span class="priority-card-name">' + escapeHtml(name) + '</span><div class="priority-bar">' + bars + '</div></div>';
-    });
-    html += '</div>';
-  }
-
-  // Room cards
-  rooms.forEach(room => {
-    const priority = state[room.priorityKey];
-    const body = renderFields(room.chips, room.decisions, room.notes);
-    if (!body && !priority) return;
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">' + escapeHtml(room.name) + '</span>';
-    if (priority) html += '<span class="priority-badge">' + escapeHtml(priority) + '</span>';
-    html += '</div><div class="room-card-body">' + (body || '<p class="empty-state">Sin datos aún</p>') + '</div></div>';
+  const lines = ['BRIEF H&P · PROYECTO\nUsuario: ' + label + '\nFecha: ' + new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' }) + '\n'];
+  Object.entries(REPORT_LABELS).forEach(([key, lbl]) => {
+    const val = state[key];
+    if (val === undefined || val === '') return;
+    const display = Array.isArray(val) ? val.join(', ') : String(val);
+    lines.push(lbl + ':\n' + display + '\n');
   });
-
-  // Baños card
-  const hasBano = banos.some(b => b.decisions.some(d => state[d.key]) || b.chips.some(c => state[c.key]) || b.notes.some(n => state[n.key]));
-  if (hasBano) {
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Baños</span></div><div class="room-card-body">';
-    let first = true;
-    banos.forEach(bano => {
-      const body = renderFields(bano.chips, bano.decisions, bano.notes);
-      if (!body) return;
-      html += '<div class="' + (first ? 'field-group' : 'sub-section') + '"><p class="sub-section-name">' + escapeHtml(bano.name) + '</p>' + body + '</div>';
-      first = false;
-    });
-    html += '</div></div>';
-  }
-
-  // Generales
-  const mh = state['pills__musthaves-list'];
-  const mhOtros = state['text__musthaves_otros'];
-  const puertas = state['radio__puertas-grupo'];
-  const puertasDet = state['text__puertas_detalle'];
-  const notasFin = state['text__notas_finales'];
-
-  if (mh || mhOtros || puertas || puertasDet || notasFin) {
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Generales</span></div><div class="room-card-body">';
-    if (mh) html += '<div class="field-group"><p class="field-label">Must-Haves</p><div class="chip-row">' + renderChips(mh) + '</div></div>';
-    if (mhOtros) html += '<div class="field-group"><div class="note-block"><p class="note-label">Must-Haves — otros</p>' + escapeHtml(mhOtros) + '</div></div>';
-    if (puertas) html += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">Puertas interiores:</span> ' + escapeHtml(puertas) + '</span></div>';
-    if (puertasDet) html += '<div class="field-group"><div class="note-block"><p class="note-label">Puertas — detalle</p>' + escapeHtml(puertasDet) + '</div></div>';
-    if (notasFin) html += '<div class="field-group"><div class="note-block"><p class="note-label">Notas finales</p>' + escapeHtml(notasFin) + '</div></div>';
-    html += '</div></div>';
-  }
-
-  return html || '<p class="empty-state">Sin respuestas registradas.</p>';
+  return lines.join('\n');
 }
 
-// ── COPY (desde iframe si está el formulario en solo lectura) ──
-function copyBrief() {
-  const ifr = document.getElementById('briefIframe');
-  let text = '';
-  if (ifr && ifr.contentDocument && ifr.contentDocument.body) {
-    text = ifr.contentDocument.body.innerText;
-  } else {
-    text = document.getElementById('briefContent').innerText;
+function downloadBriefPDF(user) {
+  const text = getBriefText(user);
+  if (!text || text.trim() === 'Sin datos para este usuario.') {
+    alert('No hay datos para descargar.');
+    return;
   }
-  if (!text.trim()) text = 'El brief aún no ha cargado. Espere un momento y vuelva a intentar.';
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.btn-copy');
-    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(() => { btn.textContent = 'Copiar texto'; }, 2000); }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const label = USER_LABELS[user];
+  doc.setFontSize(14);
+  doc.text('BRIEF H&P · ' + label, 20, 20);
+  doc.setFontSize(10);
+  const margin = 20;
+  const pageW = doc.internal.pageSize.getWidth();
+  const maxW = pageW - margin * 2;
+  let y = 28;
+  const lineHeight = 6;
+  const lines = text.split('\n');
+  lines.forEach(line => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const wrapped = doc.splitTextToSize(line || ' ', maxW);
+    wrapped.forEach(ln => { doc.text(ln, margin, y); y += lineHeight; });
   });
+  const filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+  doc.save(filename);
 }
 
 // ── CLEAR ──
@@ -667,7 +536,6 @@ function executeClear() {
   }
   keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
-  closeViewer();
   renderUserCards();
 }
 

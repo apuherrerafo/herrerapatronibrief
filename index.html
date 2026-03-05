@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/main.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <!-- Fallback since SF Pro isn't on Google Fonts -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
@@ -1044,16 +1045,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <h1 class="page-title">Briefs <em>recibidos</em></h1>
   </div>
   <div class="users-grid" id="usersGrid"></div>
-  <div class="brief-viewer" id="briefViewer">
-    <div class="brief-viewer-header">
-      <h2 class="brief-viewer-title" id="viewerTitle">Brief</h2>
-      <div class="brief-viewer-actions">
-        <button class="btn-copy" onclick="copyBrief()">Copiar texto</button>
-        <button class="btn-close" onclick="closeViewer()">Cerrar</button>
-      </div>
-    </div>
-    <div class="brief-content" id="briefContent"></div>
-  </div>
 </div>
 <div class="modal-overlay" id="modalOverlay" data-clear-user="">
   <div class="modal" onclick="event.stopPropagation()">
@@ -1161,7 +1152,6 @@ function applyRoute() {
   if (successScreen) { successScreen.classList.remove('show'); successScreen.style.display = 'none'; }
   if (adminTopbar) adminTopbar.style.display = 'none';
   if (adminApp) adminApp.style.display = 'none';
-  closeViewer();
   closeModal();
 
   document.getElementById('loginError').textContent = '';
@@ -1629,109 +1619,59 @@ function renderUserCards() {
     else if (data.hasDraft) metaText = 'Progreso guardado — no enviado aún';
     const card = document.createElement('div');
     card.className = 'user-card';
-    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="viewBrief(\'' + user + '\')">Ver brief</button><button class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="confirmClear(\'' + user + '\')">Limpiar</button></div>';
+    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="downloadBriefPDF(\'' + user + '\')">Descargar brief</button><button class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="confirmClear(\'' + user + '\')">Limpiar</button></div>';
     grid.appendChild(card);
   });
 }
-function viewBrief(user) {
+var REPORT_LABELS = {
+  'pills__sala-muebles':'Sala · Muebles a reutilizar','radio__sala-tv-group':'Sala · TV','text__sala_tv_detalle':'Sala · TV (detalle)','radio__sala-veg-group':'Sala · Vegetación','text__sala_veg_detalle':'Sala · Vegetación (detalle)','text__sala_notas':'Sala · Notas','scale__sala_prioridad':'Sala · Prioridad',
+  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-enchapes':'Cocina · Enchapes','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
+  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-nivel-group':'Dorm. Principal · Intervención','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
+  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','age__cristobal':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mobiliario evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
+  'pills__family-muebles':'Family Room · Muebles a reutilizar','pills__family-uso':'Family Room · Uso principal','text__family_uso_otros':'Family Room · Uso (otros)','radio__family-tv-group':'Family Room · TV','text__family_tv_detalle':'Family Room · TV (detalle)','text__family_notas':'Family Room · Notas','scale__family_prioridad':'Family Room · Prioridad',
+  'radio__bano1-nivel-group':'Baño Principal · Intervención','pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','radio__bano2-nivel-group':'Baño Secundario · Intervención','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','radio__bano3-nivel-group':'Baño de Visita · Intervención','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
+  'pills__musthaves-list':'Must-Haves','text__musthaves_otros':'Must-Haves (otros)','radio__puertas-grupo':'Puertas interiores','text__puertas_detalle':'Puertas (detalle)','text__notas_finales':'Notas finales',
+};
+function getBriefText(user) {
+  var data = getUserData(user);
+  if (data.report) return data.report;
+  var state = data.state;
+  if (!state || !Object.keys(state).length) return 'Sin datos para este usuario.';
   var label = USER_LABELS[user];
-  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
-  document.getElementById('briefViewer').classList.add('show');
-  var content = document.getElementById('briefContent');
-  var url = (window.location.origin || '') + '/#viewonly/' + user;
-  content.innerHTML = '<iframe id="briefIframe" class="brief-iframe" src="' + url + '" title="Brief ' + label + '"></iframe>';
-  document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-function closeViewer() {
-  const v = document.getElementById('briefViewer');
-  const c = document.getElementById('briefContent');
-  if (v) v.classList.remove('show');
-  if (c) c.innerHTML = '';
-}
-function renderReportHTML(report) {
-  return '<div style="padding:1.5rem;font-size:13px;white-space:pre-wrap;line-height:1.7;font-family:var(--sans);color:var(--text)">' + escapeHtml(report) + '</div>';
-}
-function renderStateHTML(state) {
-  if (!state || !Object.keys(state).length) return '<p class="empty-state">Borrador vacío — el usuario no ha ingresado datos aún.</p>';
-  var rooms = [
-    { name: 'Sala – Comedor', priorityKey: 'scale__sala_prioridad',
-      chips: [{ key: 'pills__sala-muebles', label: 'Muebles a reutilizar' }],
-      decisions: [{ key: 'radio__sala-tv-group', label: 'TV' }, { key: 'radio__sala-veg-group', label: 'Vegetación' }],
-      notes: [{ key: 'text__sala_muebles_otros', label: 'Otros muebles' }, { key: 'text__sala_tv_detalle', label: 'Detalle TV' }, { key: 'text__sala_veg_detalle', label: 'Detalle vegetación' }, { key: 'text__sala_notas', label: 'Notas' }] },
-    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad',
-      chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__cocina-enchapes', label: 'Enchapes' }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales' }],
-      decisions: [{ key: 'radio__cocina-nivel-group', label: 'Intervención' }],
-      notes: [{ key: 'text__cocina_muebles_otros', label: 'Otros muebles' }, { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' }, { key: 'text__cocina_notas', label: 'Notas' }] },
-    { name: 'Dormitorio Principal', priorityKey: 'scale__dorm1_prioridad',
-      chips: [{ key: 'pills__dorm1-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__wc-el', label: 'Closet de él' }, { key: 'pills__wc-ella', label: 'Closet de ella' }],
-      decisions: [{ key: 'radio__dorm1-nivel-group', label: 'Intervención' }, { key: 'radio__dorm1-tv-group', label: 'TV' }],
-      notes: [{ key: 'text__dorm1_muebles_otros', label: 'Otros muebles' }, { key: 'text__dorm1_tv_detalle', label: 'Detalle TV' }, { key: 'text__wc_el_otros', label: 'Closet de él — otros' }, { key: 'text__wc_el_notas', label: 'Closet de él — notas' }, { key: 'text__wc_ella_otros', label: 'Closet de ella — otros' }, { key: 'text__wc_ella_notas', label: 'Closet de ella — notas' }, { key: 'text__dorm1_notas', label: 'Notas' }] },
-    { name: 'Dormitorio Cristóbal', priorityKey: 'scale__cristobal_prioridad',
-      chips: [{ key: 'pills__cristobal-muebles', label: 'Muebles a reutilizar' }],
-      decisions: [{ key: 'age__cristobal', label: 'Edad' }, { key: 'radio__cristobal-evol-group', label: 'Mob. evolutivo' }],
-      notes: [{ key: 'text__cristobal_muebles_otros', label: 'Otros muebles' }, { key: 'text__cristobal_notas', label: 'Notas' }] },
-    { name: 'Family Room', priorityKey: 'scale__family_prioridad',
-      chips: [{ key: 'pills__family-muebles', label: 'Muebles a reutilizar' }, { key: 'pills__family-uso', label: 'Uso principal' }],
-      decisions: [{ key: 'radio__family-tv-group', label: 'TV' }],
-      notes: [{ key: 'text__family_muebles_otros', label: 'Otros muebles' }, { key: 'text__family_uso_otros', label: 'Otros usos' }, { key: 'text__family_tv_detalle', label: 'Detalle TV' }, { key: 'text__family_notas', label: 'Notas' }] },
-  ];
-  var banos = [
-    { name: 'Baño Principal', decisions: [{ key: 'radio__bano1-nivel-group', label: 'Intervención' }], chips: [{ key: 'pills__bano1-equip', label: 'Equipamiento' }], notes: [{ key: 'text__bano1_equip_otros', label: 'Otros' }, { key: 'text__bano1_notas', label: 'Notas' }] },
-    { name: 'Baño Secundario', decisions: [{ key: 'radio__bano2-nivel-group', label: 'Intervención' }], chips: [{ key: 'pills__bano2-equip', label: 'Equipamiento' }], notes: [{ key: 'text__bano2_equip_otros', label: 'Otros' }, { key: 'text__bano2_notas', label: 'Notas' }] },
-    { name: 'Baño de Visita', decisions: [{ key: 'radio__bano3-nivel-group', label: 'Intervención' }], chips: [{ key: 'pills__bano3-equip', label: 'Equipamiento' }], notes: [{ key: 'text__bano3_equip_otros', label: 'Otros' }, { key: 'text__bano3_notas', label: 'Notas' }] },
-  ];
-  function rc(val) { var items = Array.isArray(val) ? val : [val]; return items.map(function(v) { return '<span class="chip">' + escapeHtml(v) + '</span>'; }).join(''); }
-  function rf(chips, decisions, notes) {
-    var h = '';
-    chips.forEach(function(f) { var val = state[f.key]; if (!val || (Array.isArray(val) && !val.length)) return; h += '<div class="field-group"><p class="field-label">' + escapeHtml(f.label) + '</p><div class="chip-row">' + rc(val) + '</div></div>'; });
-    var dh = decisions.map(function(f) { var val = state[f.key]; if (!val) return ''; return '<span class="decision-badge"><span class="decision-badge-label">' + escapeHtml(f.label) + ':</span> ' + escapeHtml(val) + '</span>'; }).filter(Boolean).join('');
-    if (dh) h += '<div class="decision-row">' + dh + '</div>';
-    notes.forEach(function(f) { var val = state[f.key]; if (!val) return; h += '<div class="field-group"><div class="note-block"><p class="note-label">' + escapeHtml(f.label) + '</p>' + escapeHtml(val) + '</div></div>'; });
-    return h;
-  }
-  var html = '';
-  var priorities = rooms.map(function(r) { return { name: r.name, val: parseInt(state[r.priorityKey]) || 0 }; }).filter(function(p) { return p.val > 0; }).sort(function(a, b) { return b.val - a.val; });
-  if (priorities.length) {
-    html += '<div class="priority-summary">';
-    priorities.forEach(function(p) { var bars = ''; for (var i = 1; i <= 5; i++) bars += '<span class="priority-bar-seg' + (i <= p.val ? ' filled' : '') + '"></span>'; html += '<div class="priority-card"><span class="priority-card-name">' + escapeHtml(p.name) + '</span><div class="priority-bar">' + bars + '</div></div>'; });
-    html += '</div>';
-  }
-  rooms.forEach(function(room) {
-    var priority = state[room.priorityKey]; var body = rf(room.chips, room.decisions, room.notes);
-    if (!body && !priority) return;
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">' + escapeHtml(room.name) + '</span>';
-    if (priority) html += '<span class="priority-badge">' + escapeHtml(priority) + '</span>';
-    html += '</div><div class="room-card-body">' + (body || '<p class="empty-state">Sin datos aún</p>') + '</div></div>';
+  var lines = ['BRIEF H&P · PROYECTO\nUsuario: ' + label + '\nFecha: ' + new Date().toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' }) + '\n'];
+  Object.keys(REPORT_LABELS).forEach(function(key) {
+    var val = state[key];
+    if (val === undefined || val === '') return;
+    var display = Array.isArray(val) ? val.join(', ') : String(val);
+    lines.push(REPORT_LABELS[key] + ':\n' + display + '\n');
   });
-  var hasBano = banos.some(function(b) { return b.decisions.some(function(d) { return state[d.key]; }) || b.chips.some(function(c) { return state[c.key]; }) || b.notes.some(function(n) { return state[n.key]; }); });
-  if (hasBano) {
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Baños</span></div><div class="room-card-body">';
-    var first = true;
-    banos.forEach(function(bano) { var body = rf(bano.chips, bano.decisions, bano.notes); if (!body) return; html += '<div class="' + (first ? 'field-group' : 'sub-section') + '"><p class="sub-section-name">' + escapeHtml(bano.name) + '</p>' + body + '</div>'; first = false; });
-    html += '</div></div>';
-  }
-  var mh = state['pills__musthaves-list'], mhO = state['text__musthaves_otros'], puertas = state['radio__puertas-grupo'], puertasDet = state['text__puertas_detalle'], notasFin = state['text__notas_finales'];
-  if (mh || mhO || puertas || puertasDet || notasFin) {
-    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Generales</span></div><div class="room-card-body">';
-    if (mh) html += '<div class="field-group"><p class="field-label">Must-Haves</p><div class="chip-row">' + rc(mh) + '</div></div>';
-    if (mhO) html += '<div class="field-group"><div class="note-block"><p class="note-label">Must-Haves — otros</p>' + escapeHtml(mhO) + '</div></div>';
-    if (puertas) html += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">Puertas interiores:</span> ' + escapeHtml(puertas) + '</span></div>';
-    if (puertasDet) html += '<div class="field-group"><div class="note-block"><p class="note-label">Puertas — detalle</p>' + escapeHtml(puertasDet) + '</div></div>';
-    if (notasFin) html += '<div class="field-group"><div class="note-block"><p class="note-label">Notas finales</p>' + escapeHtml(notasFin) + '</div></div>';
-    html += '</div></div>';
-  }
-  return html || '<p class="empty-state">Sin respuestas registradas.</p>';
+  return lines.join('\n');
 }
-function copyBrief() {
-  var ifr = document.getElementById('briefIframe');
-  var text = '';
-  if (ifr && ifr.contentDocument && ifr.contentDocument.body) text = ifr.contentDocument.body.innerText;
-  else { var el = document.getElementById('briefContent'); if (el) text = el.innerText; }
-  if (!text || !text.trim()) text = 'El brief aún no ha cargado. Espere un momento y vuelva a intentar.';
-  navigator.clipboard.writeText(text).then(function() {
-    var btn = document.querySelector('.btn-copy');
-    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(function() { btn.textContent = 'Copiar texto'; }, 2000); }
+function downloadBriefPDF(user) {
+  var text = getBriefText(user);
+  if (!text || text.trim() === 'Sin datos para este usuario.') {
+    alert('No hay datos para descargar.');
+    return;
+  }
+  var jsPDF = window.jspdf.jsPDF;
+  var doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  var label = USER_LABELS[user];
+  doc.setFontSize(14);
+  doc.text('BRIEF H&P · ' + label, 20, 20);
+  doc.setFontSize(10);
+  var margin = 20;
+  var pageW = doc.internal.pageSize.getWidth();
+  var maxW = pageW - margin * 2;
+  var y = 28;
+  var lineHeight = 6;
+  var lines = text.split('\n');
+  lines.forEach(function(line) {
+    if (y > 270) { doc.addPage(); y = 20; }
+    var wrapped = doc.splitTextToSize(line || ' ', maxW);
+    wrapped.forEach(function(ln) { doc.text(ln, margin, y); y += lineHeight; });
   });
+  var filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
+  doc.save(filename);
 }
 function confirmClear(user) {
   var overlay = document.getElementById('modalOverlay');
@@ -1762,7 +1702,6 @@ function executeClear() {
   }
   keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
-  closeViewer();
   renderUserCards();
 }
 document.getElementById('modalOverlay').addEventListener('click', e => {
