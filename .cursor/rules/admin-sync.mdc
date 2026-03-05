@@ -1,0 +1,40 @@
+# Sincronía Admin ↔ Formulario
+
+## Principio
+
+`admin.html` e `index.html` comparten el **mismo modelo de datos** en `localStorage`. Toda modificación al formulario del brief debe reflejarse en el panel administrativo.
+
+## Qué mantener sincronizado
+
+| Si cambias en `index.html`... | Actualiza en `admin.html`... |
+|-------------------------------|------------------------------|
+| Nuevo campo (pill/radio/scale/text) | `labelMap` en `renderStateHTML()` |
+| Nuevo valor de `buildReport()` `labelMap` | No necesario (el admin lee el texto plano del reporte) |
+| Nuevo usuario (agregar a `CODES`) | `USERS[]` y `USER_LABELS{}` en ambos archivos |
+| Cambio de código de acceso | `CODES` en index + `ADMIN_CODE` en ambos si aplica |
+
+## Funciones duplicadas entre ambos archivos
+
+Estas funciones existen en **ambos** archivos y deben mantenerse consistentes:
+
+- `escapeHtml(str)`
+- `getUserData(user)` — lee los keys `hp_brief_{user}`, `hp_brief_{user}_report`, `hp_brief_{user}_FINAL_*`
+- `renderUserCards()`
+- `viewBrief(user)`
+- `renderReportHTML(report)`
+- `renderStateHTML(state)` — contiene el `labelMap` con todas las claves del brief
+- `copyBrief()`
+- `confirmClear(user)` / `executeClear()`
+
+## Regla de oro
+
+> Si agregas un campo al brief, agrega su key en el `labelMap` de `renderStateHTML()` tanto en `index.html` como en `admin.html`.
+
+## Códigos de acceso actuales
+
+| Rol | Código | Archivo |
+|-----|--------|---------|
+| Cliente Cervera | `CERVERA` | `index.html` |
+| Cliente Herrera | `HERRERA` | `index.html` |
+| Cliente Patroni | `PATRONI` | `index.html` |
+| Admin | `cafeteria` | `index.html` + `admin.html` |

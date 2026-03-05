@@ -1,0 +1,87 @@
+# Estructura del formulario de brief
+
+Esta regla aplica cuando se modifica el formulario en `index.html`.
+
+## Estructura de una sección
+
+Cada sección sigue este patrón HTML exacto:
+
+```html
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">NN</span>
+    <h2 class="section-title">Nombre del Espacio</h2>
+  </div>
+
+  <!-- Bloques de preguntas -->
+  <div class="q-block">
+    <span class="q-label">Pregunta</span>
+    <!-- campo aquí -->
+  </div>
+
+  <!-- Prioridad (última pregunta de cada sección de espacio) -->
+  <div class="q-block">
+    <span class="q-label">Prioridad de inversión en este espacio</span>
+    <div class="scale-row" id="s-{prefix}"></div>
+    <div class="scale-labels"><span>1 — Menor</span><span>5 — Mayor</span></div>
+  </div>
+</div>
+```
+
+## Tipos de campo
+
+### Pills (multi-select)
+```html
+<div class="pill-row" id="{seccion}-{campo}">
+  <span class="pill" data-val="Opción">Opción</span>
+  <span class="pill otros-trigger" data-target="{seccion}-{campo}-otros">Otros</span>
+</div>
+<div class="sub-field" id="{seccion}-{campo}-otros">
+  <textarea class="text-field" name="{seccion}_{campo}_otros" placeholder="..." rows="2"></textarea>
+</div>
+```
+
+### Radio (single-select)
+```html
+<div class="radio-group" id="{seccion}-{campo}-group">
+  <div class="radio-item" data-val="Opción A"><span class="radio-dot"></span> Opción A</div>
+  <div class="radio-item" data-val="Opción B"><span class="radio-dot"></span> Opción B</div>
+</div>
+```
+
+Si el radio tiene sub-field condicional, registrarlo en `radioSubMap`:
+```js
+const radioSubMap = {
+  '{seccion}-{campo}-group': { show: ['Sí'], target: '{seccion}-{campo}-detail' },
+};
+```
+
+### Escala 1–5
+```html
+<div class="scale-row" id="s-{prefix}"></div>
+<div class="scale-labels"><span>1 — Menor</span><span>5 — Mayor</span></div>
+```
+Y registrar en `scaleConfigs`:
+```js
+{ id: 's-{prefix}', name: '{prefix}_prioridad' },
+```
+
+### Textarea libre
+```html
+<textarea class="text-field" name="{seccion}_{campo}" placeholder="..." rows="2"></textarea>
+```
+
+### Hint (texto de ayuda)
+```html
+<p class="q-hint">Texto explicativo opcional.</p>
+```
+
+## Checklist al agregar/modificar una sección
+
+1. Agregar el HTML de la sección en `index.html` dentro de `<form id="briefForm">`.
+2. Si tiene escala, registrar en `scaleConfigs[]`.
+3. Si tiene radio con sub-field, registrar en `radioSubMap{}`.
+4. Agregar las entradas correspondientes en `labelMap` dentro de `buildReport()`.
+5. Agregar las entradas correspondientes en `labelMap` dentro de `renderStateHTML()` (mismo archivo).
+6. **Actualizar `admin.html`:** agregar las mismas entradas en el `labelMap` de `renderStateHTML()` del admin.
+7. Incrementar el número de sección (`section-num`) si es una sección nueva.

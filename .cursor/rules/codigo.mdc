@@ -1,0 +1,51 @@
+# Estilo y convenciones de código — H&P Brief
+
+## Stack
+
+- HTML5 + vanilla JavaScript (inline en los HTML) + Tailwind CSS v4.
+- Sin frameworks (React, Vue, jQuery, etc.) a menos que el usuario lo pida explícitamente.
+- Sin backend. Toda persistencia usa `localStorage` del navegador.
+
+## Idioma
+
+- **UI (texto visible al usuario):** siempre en español.
+- **Código (variables, funciones, comentarios):** inglés o español — mantener el estilo del archivo que se está editando.
+- **Fechas:** locale `es-PE` (formato peruano).
+
+## Arquitectura de archivos
+
+| Archivo | Rol |
+|---------|-----|
+| `index.html` | Formulario del brief (clientes) + admin embebido vía hash routing |
+| `admin.html` | Panel administrativo standalone (URL `/admin`) |
+| `src/input.css` | Fuente Tailwind → compila a `assets/main.css` |
+| `assets/main.css` | CSS compilado (no editar directamente) |
+
+- El JS va **inline** dentro de cada HTML (tag `<script>` al final del `<body>`).
+- No crear archivos `.js` separados a menos que el usuario lo solicite.
+- Los estilos específicos de cada página van en un `<style>` dentro del `<head>`. Los estilos compartidos y tokens van en `src/input.css`.
+
+## Modelo de datos (localStorage)
+
+| Key | Contenido |
+|-----|-----------|
+| `hp_session` | `{ type: 'client'\|'admin', user?: string }` |
+| `hp_brief_{user}` | JSON del estado del formulario (borrador) |
+| `hp_brief_{user}_report` | Texto plano del reporte final |
+| `hp_brief_{user}_FINAL_{timestamp}` | JSON snapshot final con `{ report, state, submittedAt }` |
+
+Usuarios válidos: `cervera`, `herrera`, `patroni`.
+
+## Convenciones de estado
+
+Los keys del estado usan prefijos:
+
+- `pills__{containerId}` — pills multi-select (array de strings)
+- `radio__{groupId}` — radio single-select (string)
+- `scale__{scaleName}` — escala 1–5 (string "1"–"5")
+- `age__cristobal` — edad (string)
+- `text__{fieldName}` — textarea/input (string)
+
+## Build
+
+Después de agregar clases Tailwind nuevas, ejecutar `npm run build:css` para recompilar `assets/main.css`.

@@ -576,11 +576,23 @@ body {
       </div>
     </div>
 
-    <!-- Electrodomésticos -->
+    <!-- Artefactos adicionales -->
     <div class="q-block">
-      <span class="q-label">Electrodomésticos que se mantienen y especificaciones</span>
-      <p class="q-hint">Marca, modelo, medidas, o cualquier detalle que tengamos en cuenta al diseñar.</p>
-      <textarea class="text-field" name="cocina_electro" placeholder="ej. Refrigeradora Samsung 90cm que se mantiene, horno nuevo empotrado de 60cm, lavavajillas por incluir…" rows="3"></textarea>
+      <span class="q-label">Artefactos adicionales que usan en la cocina</span>
+      <p class="q-hint">Los electrodomésticos principales se renovarán. Cuéntennos qué otros artefactos usan día a día para diseñar el espacio adecuado.</p>
+      <div class="pill-row" id="cocina-artefactos">
+        <span class="pill" data-val="Tostadora">Tostadora</span>
+        <span class="pill" data-val="Extractor">Extractor</span>
+        <span class="pill" data-val="Horno pequeño / mini horno">Mini horno</span>
+        <span class="pill" data-val="Cafetera">Cafetera</span>
+        <span class="pill" data-val="Licuadora">Licuadora</span>
+        <span class="pill" data-val="Lavavajillas">Lavavajillas</span>
+        <span class="pill" data-val="Freidora de aire">Freidora de aire</span>
+        <span class="pill otros-trigger" data-target="cocina-artefactos-otros">Otros</span>
+      </div>
+      <div class="sub-field" id="cocina-artefactos-otros">
+        <textarea class="text-field" name="cocina_artefactos_otros" placeholder="¿Qué otros artefactos usan?" rows="2"></textarea>
+      </div>
     </div>
 
     <!-- Notas -->
@@ -782,10 +794,9 @@ body {
     <div class="q-block">
       <span class="q-label">Muebles actuales que se reutilizan</span>
       <div class="pill-row" id="family-muebles">
-        <span class="pill" data-val="Sofá">Sofá</span>
+        <span class="pill" data-val="Sofá / sillones">Sofá / sillones</span>
         <span class="pill" data-val="Mesa de centro">Mesa de centro</span>
         <span class="pill" data-val="Estantería">Estantería</span>
-        <span class="pill" data-val="Sillones">Sillones</span>
         <span class="pill" data-val="Ninguno">Ninguno</span>
         <span class="pill otros-trigger" data-target="family-muebles-otros">Otros</span>
       </div>
@@ -858,10 +869,8 @@ body {
       <span class="q-label">Baño principal — equipamiento especial (pueden marcar más de uno)</span>
       <div class="pill-row" id="bano1-equip">
         <span class="pill" data-val="Tina">Tina</span>
-        <span class="pill" data-val="Ducha lluvia">Ducha lluvia</span>
-        <span class="pill" data-val="Steam / sauna">Steam / sauna</span>
+        <span class="pill" data-val="Ducha española">Ducha española</span>
         <span class="pill" data-val="Doble lavatorio">Doble lavatorio</span>
-        <span class="pill" data-val="Calefacción de piso">Calefacción de piso</span>
         <span class="pill" data-val="Espejo con luz">Espejo con luz</span>
         <span class="pill otros-trigger" data-target="bano1-equip-otros">Otros</span>
       </div>
@@ -888,7 +897,7 @@ body {
       <span class="q-label">Baño secundario — equipamiento especial</span>
       <div class="pill-row" id="bano2-equip">
         <span class="pill" data-val="Tina">Tina</span>
-        <span class="pill" data-val="Ducha lluvia">Ducha lluvia</span>
+        <span class="pill" data-val="Ducha española">Ducha española</span>
         <span class="pill" data-val="Doble lavatorio">Doble lavatorio</span>
         <span class="pill" data-val="Espejo con luz">Espejo con luz</span>
         <span class="pill otros-trigger" data-target="bano2-equip-otros">Otros</span>
@@ -954,6 +963,19 @@ body {
       </div>
       <div class="sub-field" id="musthaves-otros">
         <textarea class="text-field" name="musthaves_otros" placeholder="¿Qué otros must-haves tienen en mente?" rows="2"></textarea>
+      </div>
+    </div>
+
+    <div class="q-block">
+      <span class="q-label">Puertas interiores</span>
+      <div class="radio-group" id="puertas-grupo">
+        <div class="radio-item" data-val="Cambiar todas"><span class="radio-dot"></span> Cambiar todas</div>
+        <div class="radio-item" data-val="Mantener las actuales"><span class="radio-dot"></span> Mantener las actuales</div>
+        <div class="radio-item" data-val="Cambiar solo algunas"><span class="radio-dot"></span> Cambiar solo algunas</div>
+        <div class="radio-item" data-val="Nos guiamos por su recomendación"><span class="radio-dot"></span> Nos guiamos por su recomendación</div>
+      </div>
+      <div class="sub-field" id="puertas-detail">
+        <textarea class="text-field" name="puertas_detalle" placeholder="¿Cuáles puertas cambiar? ¿Algún estilo o material en mente?" rows="2"></textarea>
       </div>
     </div>
 
@@ -1212,6 +1234,7 @@ const radioSubMap = {
   'sala-veg-group':   { show: ['Sí'], target: 'sala-veg-detail' },
   'dorm1-tv-group':   { show: ['Sí'], target: 'dorm1-tv-detail' },
   'family-tv-group':  { show: ['Sí'], target: 'family-tv-detail' },
+  'puertas-grupo':    { show: ['Cambiar todas', 'Cambiar solo algunas'], target: 'puertas-detail' },
 };
 
 document.querySelectorAll('.radio-group').forEach(group => {
@@ -1393,7 +1416,8 @@ function buildReport(state) {
     'pills__cocina-muebles':    'Cocina · Muebles a reutilizar',
     'radio__cocina-nivel-group':'Cocina · Tipo de intervención',
     'pills__cocina-enchapes':   'Cocina · Enchapes',
-    'text__cocina_electro':     'Cocina · Electrodomésticos',
+    'pills__cocina-artefactos':  'Cocina · Artefactos adicionales',
+    'text__cocina_artefactos_otros': 'Cocina · Artefactos (otros)',
     'text__cocina_notas':       'Cocina · Notas',
     'scale__cocina_prioridad':  'Cocina · Prioridad de inversión',
 
@@ -1439,6 +1463,8 @@ function buildReport(state) {
 
     'pills__musthaves-list':    'Must-Haves',
     'text__musthaves_otros':    'Must-Haves (otros)',
+    'radio__puertas-grupo':     'Puertas interiores',
+    'text__puertas_detalle':    'Puertas interiores (detalle)',
     'text__notas_finales':      'Notas finales',
   };
 
@@ -1569,7 +1595,7 @@ function renderReportHTML(report) {
   return html || '<p class="empty-state">Sin respuestas registradas.</p>';
 }
 function renderStateHTML(state) {
-  const labelMap = { 'pills__sala-muebles':['Sala – Comedor','Muebles a reutilizar'],'radio__sala-tv-group':['Sala – Comedor','TV'],'text__sala_tv_detalle':['Sala – Comedor','TV (detalle)'],'radio__sala-veg-group':['Sala – Comedor','Vegetación'],'text__sala_veg_detalle':['Sala – Comedor','Vegetación (detalle)'],'text__sala_notas':['Sala – Comedor','Notas'],'scale__sala_prioridad':['Sala – Comedor','Prioridad'],'pills__cocina-muebles':['Cocina','Muebles a reutilizar'],'radio__cocina-nivel-group':['Cocina','Tipo de intervención'],'pills__cocina-enchapes':['Cocina','Enchapes'],'text__cocina_electro':['Cocina','Electrodomésticos'],'text__cocina_notas':['Cocina','Notas'],'scale__cocina_prioridad':['Cocina','Prioridad'],'pills__dorm1-muebles':['Dorm. Principal','Muebles a reutilizar'],'radio__dorm1-nivel-group':['Dorm. Principal','Intervención'],'radio__dorm1-tv-group':['Dorm. Principal','TV'],'text__dorm1_tv_detalle':['Dorm. Principal','TV (detalle)'],'pills__wc-el':['Dorm. Principal · Closet Él','Inventario'],'text__wc_el_otros':['Dorm. Principal · Closet Él','Otros'],'text__wc_el_notas':['Dorm. Principal · Closet Él','Notas'],'pills__wc-ella':['Dorm. Principal · Closet Ella','Inventario'],'text__wc_ella_otros':['Dorm. Principal · Closet Ella','Otros'],'text__wc_ella_notas':['Dorm. Principal · Closet Ella','Notas'],'text__dorm1_notas':['Dorm. Principal','Notas'],'scale__dorm1_prioridad':['Dorm. Principal','Prioridad'],'pills__cristobal-muebles':['Cristóbal','Muebles a reutilizar'],'age__cristobal':['Cristóbal','Edad'],'radio__cristobal-evol-group':['Cristóbal','Mobiliario evolutivo'],'text__cristobal_notas':['Cristóbal','Notas'],'scale__cristobal_prioridad':['Cristóbal','Prioridad'],'pills__family-muebles':['Family Room','Muebles a reutilizar'],'pills__family-uso':['Family Room','Uso principal'],'text__family_uso_otros':['Family Room','Uso (otros)'],'radio__family-tv-group':['Family Room','TV'],'text__family_tv_detalle':['Family Room','TV (detalle)'],'text__family_notas':['Family Room','Notas'],'scale__family_prioridad':['Family Room','Prioridad'],'radio__bano1-nivel-group':['Baño Principal','Intervención'],'pills__bano1-equip':['Baño Principal','Equipamiento'],'text__bano1_equip_otros':['Baño Principal','Otros'],'text__bano1_notas':['Baño Principal','Notas'],'radio__bano2-nivel-group':['Baño Secundario','Intervención'],'pills__bano2-equip':['Baño Secundario','Equipamiento'],'text__bano2_equip_otros':['Baño Secundario','Otros'],'text__bano2_notas':['Baño Secundario','Notas'],'radio__bano3-nivel-group':['Baño de Visita','Intervención'],'pills__bano3-equip':['Baño de Visita','Equipamiento'],'text__bano3_equip_otros':['Baño de Visita','Otros'],'text__bano3_notas':['Baño de Visita','Notas'],'pills__musthaves-list':['Must-Haves','Selección'],'text__musthaves_otros':['Must-Haves','Otros'],'text__notas_finales':['General','Notas finales'] };
+  const labelMap = { 'pills__sala-muebles':['Sala – Comedor','Muebles a reutilizar'],'radio__sala-tv-group':['Sala – Comedor','TV'],'text__sala_tv_detalle':['Sala – Comedor','TV (detalle)'],'radio__sala-veg-group':['Sala – Comedor','Vegetación'],'text__sala_veg_detalle':['Sala – Comedor','Vegetación (detalle)'],'text__sala_notas':['Sala – Comedor','Notas'],'scale__sala_prioridad':['Sala – Comedor','Prioridad'],'pills__cocina-muebles':['Cocina','Muebles a reutilizar'],'radio__cocina-nivel-group':['Cocina','Tipo de intervención'],'pills__cocina-enchapes':['Cocina','Enchapes'],'pills__cocina-artefactos':['Cocina','Artefactos adicionales'],'text__cocina_artefactos_otros':['Cocina','Artefactos (otros)'],'text__cocina_notas':['Cocina','Notas'],'scale__cocina_prioridad':['Cocina','Prioridad'],'pills__dorm1-muebles':['Dorm. Principal','Muebles a reutilizar'],'radio__dorm1-nivel-group':['Dorm. Principal','Intervención'],'radio__dorm1-tv-group':['Dorm. Principal','TV'],'text__dorm1_tv_detalle':['Dorm. Principal','TV (detalle)'],'pills__wc-el':['Dorm. Principal · Closet Él','Inventario'],'text__wc_el_otros':['Dorm. Principal · Closet Él','Otros'],'text__wc_el_notas':['Dorm. Principal · Closet Él','Notas'],'pills__wc-ella':['Dorm. Principal · Closet Ella','Inventario'],'text__wc_ella_otros':['Dorm. Principal · Closet Ella','Otros'],'text__wc_ella_notas':['Dorm. Principal · Closet Ella','Notas'],'text__dorm1_notas':['Dorm. Principal','Notas'],'scale__dorm1_prioridad':['Dorm. Principal','Prioridad'],'pills__cristobal-muebles':['Cristóbal','Muebles a reutilizar'],'age__cristobal':['Cristóbal','Edad'],'radio__cristobal-evol-group':['Cristóbal','Mobiliario evolutivo'],'text__cristobal_notas':['Cristóbal','Notas'],'scale__cristobal_prioridad':['Cristóbal','Prioridad'],'pills__family-muebles':['Family Room','Muebles a reutilizar'],'pills__family-uso':['Family Room','Uso principal'],'text__family_uso_otros':['Family Room','Uso (otros)'],'radio__family-tv-group':['Family Room','TV'],'text__family_tv_detalle':['Family Room','TV (detalle)'],'text__family_notas':['Family Room','Notas'],'scale__family_prioridad':['Family Room','Prioridad'],'radio__bano1-nivel-group':['Baño Principal','Intervención'],'pills__bano1-equip':['Baño Principal','Equipamiento'],'text__bano1_equip_otros':['Baño Principal','Otros'],'text__bano1_notas':['Baño Principal','Notas'],'radio__bano2-nivel-group':['Baño Secundario','Intervención'],'pills__bano2-equip':['Baño Secundario','Equipamiento'],'text__bano2_equip_otros':['Baño Secundario','Otros'],'text__bano2_notas':['Baño Secundario','Notas'],'radio__bano3-nivel-group':['Baño de Visita','Intervención'],'pills__bano3-equip':['Baño de Visita','Equipamiento'],'text__bano3_equip_otros':['Baño de Visita','Otros'],'text__bano3_notas':['Baño de Visita','Notas'],'pills__musthaves-list':['Must-Haves','Selección'],'text__musthaves_otros':['Must-Haves','Otros'],'radio__puertas-grupo':['Puertas interiores','Decisión'],'text__puertas_detalle':['Puertas interiores','Detalle'],'text__notas_finales':['General','Notas finales'] };
   const grouped = {};
   Object.entries(labelMap).forEach(([key, [group, label]]) => {
     const val = state[key];

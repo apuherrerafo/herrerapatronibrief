@@ -1,0 +1,11 @@
+# Plataforma y entorno de desarrollo
+
+El usuario trabaja en **macOS** (darwin). Todo código, scripts y configuración deben ser compatibles con macOS/Unix.
+
+## Reglas obligatorias
+
+- **NO generar archivos `.bat` ni `.ps1`.** Si se necesita un script, usar `.sh` con `#!/bin/bash`.
+- **Servidor local:** `npx serve -l 8080`. Indicar al usuario que lo ejecute vía la tarea de Cursor (ver `servidor.mdc`), nunca desde el agente.
+- **Abrir navegador:** usar `open http://localhost:8080` (no `start`).
+- **Rutas:** usar `/` como separador. No usar `\` ni rutas Windows.
+- **Comandos de terminal:** usar versiones Unix (`rm`, `cp`, `mv`, `cat`, `grep`, etc.), nunca equivalentes Windows (`del`, `copy`, `type`, `findstr`).

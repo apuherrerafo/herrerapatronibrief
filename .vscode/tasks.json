@@ -4,8 +4,8 @@
     {
       "label": "Servidor H&P Brief",
       "type": "shell",
-      "command": "cmd",
-      "args": ["/c", "servidor-fullpath.bat"],
+      "command": "npx",
+      "args": ["serve", "-l", "8080"],
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "problemMatcher": {
@@ -22,7 +22,7 @@
     {
       "label": "Abrir H&P en navegador",
       "type": "shell",
-      "command": "start",
+      "command": "open",
       "args": ["http://localhost:8080"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "silent" },
@@ -31,8 +31,8 @@
     {
       "label": "Subir a GitHub",
       "type": "shell",
-      "command": "cmd",
-      "args": ["/c", "push-github.bat"],
+      "command": "bash",
+      "args": ["-c", "git add . && git commit -m 'update' && git push"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "always", "panel": "shared" },
       "group": "build"

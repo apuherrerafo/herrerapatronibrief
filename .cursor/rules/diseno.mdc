@@ -1,0 +1,57 @@
+# Sistema de diseño — H&P Brief
+
+## Tipografía
+
+| Uso | Font | Variable |
+|-----|------|----------|
+| Cuerpo, UI, botones | DM Sans (300, 400, 500) | `var(--sans)` / `font-family: var(--font-sans)` |
+| Títulos decorativos | Instrument Serif (regular, italic) | `var(--serif)` / `font-family: var(--font-serif)` |
+
+- Base: `14px`, peso `300`, line-height `1.55`.
+- Labels: `11px`, uppercase, `letter-spacing: 0.08em–0.14em`.
+- Eyebrows: `10px`, uppercase, `letter-spacing: 0.16em–0.2em`.
+
+## Paleta (oklch, definida en `src/input.css`)
+
+| Alias (inline CSS) | Variable semántica | Uso |
+|---------------------|-------------------|-----|
+| `var(--bg)` | `var(--background)` | Fondo de página |
+| `var(--surface)` | `var(--card)` | Fondo de tarjetas/paneles |
+| `var(--text)` | `var(--foreground)` | Texto principal |
+| `var(--muted)` | `var(--muted-foreground)` | Texto secundario |
+| `var(--accent)` | `var(--primary)` | Acento / pills activas |
+| `var(--border)` | `var(--border)` | Bordes |
+| `var(--red)` | `var(--destructive)` | Errores, botón limpiar |
+| `var(--green)` | `oklch(0.55 0.18 145)` | Estado "Enviado" |
+
+**No usar colores hardcodeados.** Siempre referenciar variables CSS.
+
+Excepciones permitidas: `#fff` para texto sobre fondos oscuros, `rgba(0,0,0,...)` para overlays.
+
+## Componentes clave
+
+| Componente | Clases | Notas |
+|------------|--------|-------|
+| Pill | `.pill`, `.pill.active` | Multi-select, `border-radius: 100px` |
+| Radio | `.radio-item`, `.radio-item.active` | Single-select con `.radio-dot` |
+| Scale 1–5 | `.scale-btn`, `.scale-btn.active` | Botones numéricos |
+| Botón primario | `.login-btn`, `.btn-submit` | Background `var(--accent)`, texto blanco |
+| Botón secundario | `.save-btn` | Borde, fondo `var(--surface)` |
+| Section card | `.section` | Borde izquierdo de acento, padding `2.5rem` |
+
+## Transiciones
+
+Usar `var(--transition)` = `0.18s cubic-bezier(0.4, 0, 0.2, 1)` para todas las transiciones interactivas.
+
+## Responsive
+
+| Breakpoint | Cambios principales |
+|------------|---------------------|
+| `≤ 600px` | Topbar compacto, padding reducido, grids a 1 columna |
+| `≤ 420px` | Todo al 100% ancho, fuentes mínimas, botones touch-friendly (min-height 44–48px) |
+
+## Tailwind
+
+- Versión: Tailwind CSS v4 con `@tailwindcss/cli`.
+- Los tokens de color/tipografía se mapean en `@theme inline {}` dentro de `src/input.css`.
+- Componentes shadcn/tweakcn disponibles: `.btn`, `.btn-primary`, `.card`, `.input`, `.label`, `.badge`, etc. (definidos en `@layer components` en `src/input.css`).

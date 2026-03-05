@@ -1,0 +1,76 @@
+---
+description: Cuándo y cómo delegar tareas a subagents (Task tool) en este proyecto
+alwaysApply: true
+---
+
+# Subagents — Delegación automática de tareas
+
+Usa el Task tool para lanzar subagents cuando la tarea lo amerite. Estos son los patrones del proyecto:
+
+---
+
+## 1. Explorar antes de editar (`explore`)
+
+**Cuándo:** Antes de modificar secciones del brief, el admin, o la lógica JS.
+
+```
+Prompt tipo: "Revisa index.html y admin.html. Lista todas las secciones del brief, 
+sus IDs, y los campos registrados en buildReport() y renderStateHTML(). 
+Devuelve un resumen estructurado."
+```
+
+Usar antes de: agregar secciones, agregar campos, refactorizar el formulario, o responder preguntas sobre el estado actual del brief.
+
+---
+
+## 2. Cambios multi-archivo (`generalPurpose`)
+
+**Cuándo:** La tarea toca tanto `index.html` como `admin.html` (agregar sección, agregar campo, cambiar códigos de acceso, modificar el modelo de datos).
+
+```
+Prompt tipo: "Agrega la sección 'Terraza' al brief. Sigue la skill en 
+.cursor/skills/agregar-seccion-brief/SKILL.md. Archivos a modificar: 
+index.html (HTML + scaleConfigs + buildReport + renderStateHTML) y 
+admin.html (renderStateHTML). Prefix: terraza, número: 08."
+```
+
+Siempre incluir en el prompt:
+- La skill relevante a seguir (path exacto)
+- Los archivos específicos a modificar
+- Los valores concretos (prefix, número, opciones)
+
+---
+
+## 3. Build y deploy (`shell`)
+
+**Cuándo:** Compilar Tailwind, verificar estado de git, o ejecutar comandos de build.
+
+```
+Prompt tipo: "Ejecuta npm run build:css en el workspace. Reporta si hubo errores."
+```
+
+Usar para: `npm run build:css`, `git status`, `git diff`, verificaciones pre-deploy.
+
+---
+
+## 4. Verificación visual (`browser-use`)
+
+**Cuándo:** El usuario pide verificar que un cambio se ve bien, o probar el flujo de login/brief/admin.
+
+```
+Prompt tipo: "Abre http://localhost:8080, ingresa el código CERVERA, 
+verifica que la sección Terraza aparece con pills y escala 1-5. 
+Toma screenshot y reporta."
+```
+
+Usar para: verificar que secciones nuevas aparecen, que el login funciona, que el admin muestra datos correctos.
+
+---
+
+## Reglas de uso
+
+- **Lanzar en paralelo** cuando las tareas son independientes (ej: explore en index.html + explore en admin.html).
+- **Máximo 4 subagents** simultáneos.
+- **Incluir contexto completo** en el prompt del subagent (no tiene acceso al chat del usuario).
+- **Preferir `explore` con `readonly: true`** cuando solo se necesita información, no cambios.
+- **Siempre reportar** el resultado del subagent al usuario de forma concisa.
