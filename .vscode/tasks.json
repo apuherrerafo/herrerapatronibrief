@@ -4,8 +4,7 @@
     {
       "label": "Servidor H&P Brief",
       "type": "shell",
-      "command": "npx",
-      "args": ["serve", "-l", "8080"],
+      "command": "node server.js",
       "options": { "cwd": "${workspaceFolder}" },
       "isBackground": true,
       "problemMatcher": {
@@ -23,7 +22,7 @@
       "label": "Abrir H&P en navegador",
       "type": "shell",
       "command": "open",
-      "args": ["http://localhost:8080"],
+      "args": ["http://localhost:8081"],
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "silent" },
       "group": "build"

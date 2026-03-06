@@ -1,0 +1,52 @@
+---
+description: Auditoría del backoffice — qué debe mostrarse en "Ver brief" para respetar lo que recoge el formulario
+globs: admin.html,index.html
+alwaysApply: false
+---
+
+# Auditoría Backoffice · Ver brief
+
+Cuando se modifique el formulario de brief (`index.html`) o la vista "Ver brief" del backoffice (`admin.html` o el bloque admin en `index.html`), **verificar que el backoffice muestre todo lo que el formulario recoge**.
+
+## Checklist obligatorio
+
+Al cambiar campos del formulario o la lógica de `renderStateHTML` / `getBriefText` / `REPORT_LABELS`, comprobar:
+
+### 1. Prioridad de inversión por espacio
+
+- **Formulario:** Cada espacio (Sala, Cocina, Dorm. Principal, Cristóbal, Family Room) tiene una escala 1–5 guardada como `scale__{espacio}_prioridad` (ej. `scale__sala_prioridad`).
+- **Backoffice debe mostrar:**
+  - Un bloque **"Prioridad de inversión por espacio"** al inicio del brief (resumen con barras o cards por espacio con prioridad > 0).
+  - En **cada room-card**, si el usuario eligió prioridad: etiqueta **"Prioridad de inversión en este espacio"** y el valor (ej. "3 de 5") dentro del cuerpo de la card, además del badge en el header.
+
+### 2. Espacios y campos por sala
+
+Cada espacio del formulario debe tener su equivalente en la definición de `rooms` (y `banos`) dentro de `renderStateHTML`, con:
+
+- **chips:** pills (muebles, enchapes, artefactos, equipamiento, etc.) con `detail` / `detailNotes` cuando haya "Otros".
+- **decisions:** radios (TV, Vegetación, Intervención, etc.) con `detail` cuando haya campo de detalle.
+- **notes:** solo notas que no sean detalle de un chip/decision (ej. "Notas" finales del espacio).
+- **priorityKey:** la clave del scale de prioridad (`scale__sala_prioridad`, etc.).
+
+### 3. Orden visual
+
+- Cada **detalle** (Otros muebles, Detalle TV, Detalle vegetación, etc.) debe mostrarse **justo debajo** de su pill o decisión, no agrupado al final con el resto de notas.
+
+### 4. Texto para copiar / reporte
+
+- `getBriefText(user)` y `REPORT_LABELS` deben incluir **todas** las claves de estado que el formulario guarda (pills, radio, text, scale, age), para que "Copiar texto" y cualquier export futuro no omitan datos.
+- Incluir siempre las claves `scale__*_prioridad` en `REPORT_LABELS`.
+
+### 5. Sincronización admin.html ↔ index.html
+
+- La lógica de **Ver brief** (viewBrief, renderStateHTML, closeViewer, copyBrief) y las estructuras de datos (rooms, banos, REPORT_LABELS) deben mantenerse **iguales** en `admin.html` y en el bloque admin embebido de `index.html`. Si se añade un campo en uno, añadirlo en el otro.
+
+## Resumen de claves de estado (formulario → backoffice)
+
+- **Pills:** `pills__{id}` (ej. `pills__sala-muebles`).
+- **Radios:** `radio__{id}` (ej. `radio__sala-tv-group`).
+- **Textos / notas:** `text__{name}` (ej. `text__sala_muebles_otros`, `text__sala_tv_detalle`).
+- **Escala prioridad:** `scale__sala_prioridad`, `scale__cocina_prioridad`, `scale__dorm1_prioridad`, `scale__cristobal_prioridad`, `scale__family_prioridad`.
+- **Edad (Cristóbal):** `age__cristobal`.
+
+Si se añade un nuevo tipo de campo o una nueva pregunta al formulario, añadir aquí y en `renderStateHTML` + `REPORT_LABELS` en ambos archivos (admin e index).

@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "build:css": "npx @tailwindcss/cli -i ./src/input.css -o ./assets/main.css --minify",
-    "build": "npm run build:css"
+    "build": "npm run build:css",
+    "serve": "node server.js"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.0.0",

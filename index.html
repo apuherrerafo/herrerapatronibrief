@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/main.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <!-- Fallback since SF Pro isn't on Google Fonts -->
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap');
@@ -245,13 +244,14 @@ body {
 .text-field:focus { border-bottom-color: var(--text); }
 .text-field::placeholder { color: #ccc; }
 
-/* expandable sub-field */
+/* expandable sub-field (aparece justo debajo del pill/opción que lo activa) */
 .sub-field {
   overflow: hidden; max-height: 0;
   transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease;
   opacity: 0; margin-top: 0;
 }
-.sub-field.open { max-height: 200px; opacity: 1; margin-top: 0.75rem; }
+.sub-field.open { max-height: 220px; opacity: 1; margin-top: 0.75rem; }
+.sub-field-label { display: block; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.4rem; }
 
 /* ── AGE PICKER ── */
 .age-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
@@ -343,6 +343,7 @@ body {
 .btn-close:hover { color: var(--text); border-color: var(--text); }
 .brief-content { display: flex; flex-direction: column; gap: 0; }
 .empty-state { padding: 2rem; text-align: center; color: var(--muted); font-size: 13px; font-style: italic; }
+.report-fallback { padding: 1.5rem; font-size: 13px; white-space: pre-wrap; line-height: 1.7; font-family: var(--sans); color: var(--text); }
 .priority-summary { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.75rem; padding-bottom: 1.75rem; border-bottom: 1px solid var(--border); }
 .priority-card { flex: 1; min-width: 110px; padding: 0.65rem 0.85rem; border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-direction: column; gap: 0.4rem; }
 .priority-card-name { font-size: 10px; font-weight: 500; letter-spacing: 0.04em; color: var(--text); }
@@ -353,6 +354,8 @@ body {
 .room-card:last-child { margin-bottom: 0; }
 .room-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
 .room-card-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 400; }
+.priority-header-wrap { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.priority-header-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .priority-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: #fff; font-size: 12px; font-weight: 500; font-family: var(--sans); flex-shrink: 0; }
 .room-card-body { display: flex; flex-direction: column; gap: 1rem; }
 .field-group { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -362,7 +365,7 @@ body {
 .decision-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .decision-badge { font-family: var(--sans); font-size: 12px; font-weight: 400; padding: 0.3rem 0.75rem; border-radius: var(--radius); background: var(--subtle); color: var(--text); border: 1px solid var(--border); }
 .decision-badge-label { font-weight: 500; color: var(--muted); margin-right: 0.25rem; }
-.note-block { background: var(--subtle); border-radius: var(--radius); padding: 0.65rem 0.85rem; font-size: 13px; color: var(--text); line-height: 1.5; border-left: 3px solid var(--border); }
+.note-block { background: var(--subtle); border-radius: var(--radius); padding: 0.65rem 0.85rem; font-size: 13px; color: var(--text); line-height: 1.5; border-left: 3px solid var(--border); overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap; max-width: 100%; box-sizing: border-box; }
 .note-block .note-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
 .sub-section { padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .sub-section-name { font-size: 11px; font-weight: 500; letter-spacing: 0.04em; margin-bottom: 0.65rem; }
@@ -515,6 +518,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="sala-muebles-otros">Otros</span>
       </div>
       <div class="sub-field" id="sala-muebles-otros">
+        <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="sala_muebles_otros" placeholder="¿Cuáles otros muebles se reutilizan?" rows="2"></textarea>
       </div>
     </div>
@@ -579,6 +583,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="cocina-muebles-otros">Otros</span>
       </div>
       <div class="sub-field" id="cocina-muebles-otros">
+        <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="cocina_muebles_otros" placeholder="¿Qué otros elementos se mantienen?" rows="2"></textarea>
       </div>
     </div>
@@ -590,17 +595,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <div class="radio-item" data-val="Renovación completa — layout, muebles y acabados"><span class="radio-dot"></span> Renovación completa — layout, muebles y acabados</div>
         <div class="radio-item" data-val="Refresh parcial — frentes, encimera o acabados"><span class="radio-dot"></span> Refresh parcial — frentes, encimera o acabados</div>
         <div class="radio-item" data-val="Sin cambios estructurales"><span class="radio-dot"></span> Sin cambios estructurales</div>
-      </div>
-    </div>
-
-    <!-- Enchapes -->
-    <div class="q-block">
-      <span class="q-label">Enchapes — pisos y paredes (pueden marcar más de uno)</span>
-      <div class="pill-row" id="cocina-enchapes">
-        <span class="pill" data-val="Piso">Piso</span>
-        <span class="pill" data-val="Paredes">Paredes</span>
-        <span class="pill" data-val="Backsplash">Backsplash</span>
-        <span class="pill" data-val="Ninguno — se mantienen">Ninguno — se mantienen</span>
       </div>
     </div>
 
@@ -619,6 +613,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="cocina-artefactos-otros">Otros</span>
       </div>
       <div class="sub-field" id="cocina-artefactos-otros">
+        <span class="sub-field-label">Otros artefactos (especifique)</span>
         <textarea class="text-field" name="cocina_artefactos_otros" placeholder="¿Qué otros artefactos usan?" rows="2"></textarea>
       </div>
     </div>
@@ -658,17 +653,8 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="dorm1-muebles-otros">Otros</span>
       </div>
       <div class="sub-field" id="dorm1-muebles-otros">
+        <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="dorm1_muebles_otros" placeholder="¿Qué otros muebles se reutilizan?" rows="2"></textarea>
-      </div>
-    </div>
-
-    <!-- Nivel -->
-    <div class="q-block">
-      <span class="q-label">Nivel de intervención</span>
-      <div class="radio-group" id="dorm1-nivel-group">
-        <div class="radio-item" data-val="Renovación total"><span class="radio-dot"></span> Renovación total</div>
-        <div class="radio-item" data-val="Closet nuevo + acabados"><span class="radio-dot"></span> Closet nuevo + acabados</div>
-        <div class="radio-item" data-val="Solo mobiliario y decoración"><span class="radio-dot"></span> Solo mobiliario y decoración</div>
       </div>
     </div>
 
@@ -701,6 +687,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="wc-el-otros">Otros</span>
       </div>
       <div class="sub-field" id="wc-el-otros">
+        <span class="sub-field-label">Closet de él — otros (especifique)</span>
         <textarea class="text-field" name="wc_el_otros" placeholder="¿Qué otros artículos necesita guardar?" rows="2"></textarea>
       </div>
       <div style="margin-top:0.75rem">
@@ -725,6 +712,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="wc-ella-otros">Otros</span>
       </div>
       <div class="sub-field" id="wc-ella-otros">
+        <span class="sub-field-label">Closet de ella — otros (especifique)</span>
         <textarea class="text-field" name="wc_ella_otros" placeholder="¿Qué otros artículos necesita guardar?" rows="2"></textarea>
       </div>
       <div style="margin-top:0.75rem">
@@ -767,6 +755,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="cristobal-muebles-otros">Otros</span>
       </div>
       <div class="sub-field" id="cristobal-muebles-otros">
+        <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="cristobal_muebles_otros" placeholder="¿Qué otros muebles se reutilizan?" rows="2"></textarea>
       </div>
     </div>
@@ -774,15 +763,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <!-- Edad -->
     <div class="q-block">
       <span class="q-label">Edad de Cristóbal</span>
-      <div class="age-row" id="cristobal-edad">
-        <button type="button" class="age-btn" data-val="4">4</button>
-        <button type="button" class="age-btn" data-val="5">5</button>
-        <button type="button" class="age-btn" data-val="6">6</button>
-        <button type="button" class="age-btn" data-val="7">7</button>
-        <button type="button" class="age-btn" data-val="8">8</button>
-        <button type="button" class="age-btn" data-val="9">9</button>
-        <button type="button" class="age-btn" data-val="10">10</button>
-      </div>
+      <input type="text" class="text-field" name="cristobal_edad" placeholder="Ej. 6 años" autocomplete="off"/>
     </div>
 
     <!-- Mobiliario evolutivo -->
@@ -790,8 +771,12 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <span class="q-label">¿El mobiliario debe evolucionar con su edad?</span>
       <p class="q-hint">Podemos diseñar el cuarto pensando en que los muebles crezcan con Cristóbal: alturas ajustables, escritorios que se adaptan, espacios que se transforman a medida que sus necesidades cambian.</p>
       <div class="radio-group" id="cristobal-evol-group">
-        <div class="radio-item" data-val="Sí — que evolucione con él"><span class="radio-dot"></span> Sí — que evolucione con él</div>
-        <div class="radio-item" data-val="No — diseño para su edad actual"><span class="radio-dot"></span> No — diseño para su edad actual</div>
+        <div class="radio-item" data-val="Sí"><span class="radio-dot"></span> Sí</div>
+        <div class="radio-item" data-val="No"><span class="radio-dot"></span> No</div>
+      </div>
+      <div class="sub-field open" id="cristobal-evol-notas">
+        <span class="sub-field-label">Anotaciones sobre mobiliario evolutivo (opcional)</span>
+        <textarea class="text-field" name="cristobal_evol_notas" placeholder="Si desean agregar algo sobre cómo debe evolucionar el mobiliario…" rows="2"></textarea>
       </div>
     </div>
 
@@ -822,13 +807,14 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <div class="q-block">
       <span class="q-label">Muebles actuales que se reutilizan</span>
       <div class="pill-row" id="family-muebles">
-        <span class="pill" data-val="Sofá / sillones">Sofá / sillones</span>
+        <span class="pill" data-val="Sofá">Sofá</span>
         <span class="pill" data-val="Mesa de centro">Mesa de centro</span>
         <span class="pill" data-val="Estantería">Estantería</span>
         <span class="pill" data-val="Ninguno">Ninguno</span>
         <span class="pill otros-trigger" data-val="Otros" data-target="family-muebles-otros">Otros</span>
       </div>
       <div class="sub-field" id="family-muebles-otros">
+        <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="family_muebles_otros" placeholder="¿Qué otros muebles se reutilizan?" rows="2"></textarea>
       </div>
     </div>
@@ -845,6 +831,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="family-uso-otros">Otros</span>
       </div>
       <div class="sub-field" id="family-uso-otros">
+        <span class="sub-field-label">Otros usos (especifique)</span>
         <textarea class="text-field" name="family_uso_otros" placeholder="¿Qué otro uso le darán?" rows="2"></textarea>
       </div>
     </div>
@@ -887,13 +874,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
 
     <!-- Baño principal -->
     <div class="q-block">
-      <span class="q-label">Baño principal — tipo de intervención</span>
-      <div class="radio-group" id="bano1-nivel-group">
-        <div class="radio-item" data-val="Renovación completa"><span class="radio-dot"></span> Renovación completa</div>
-        <div class="radio-item" data-val="Solo enchapes y griferías"><span class="radio-dot"></span> Solo enchapes y griferías</div>
-      </div>
-    </div>
-    <div class="q-block">
       <span class="q-label">Baño principal — equipamiento especial (pueden marcar más de uno)</span>
       <div class="pill-row" id="bano1-equip">
         <span class="pill" data-val="Tina">Tina</span>
@@ -903,6 +883,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="bano1-equip-otros">Otros</span>
       </div>
       <div class="sub-field" id="bano1-equip-otros">
+        <span class="sub-field-label">Otros equipamiento (especifique)</span>
         <textarea class="text-field" name="bano1_equip_otros" placeholder="¿Qué otro equipamiento desean en el baño principal?" rows="2"></textarea>
       </div>
     </div>
@@ -915,13 +896,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
 
     <!-- Baño secundario -->
     <div class="q-block">
-      <span class="q-label">Baño secundario — tipo de intervención</span>
-      <div class="radio-group" id="bano2-nivel-group">
-        <div class="radio-item" data-val="Renovación completa"><span class="radio-dot"></span> Renovación completa</div>
-        <div class="radio-item" data-val="Solo enchapes y griferías"><span class="radio-dot"></span> Solo enchapes y griferías</div>
-      </div>
-    </div>
-    <div class="q-block">
       <span class="q-label">Baño secundario — equipamiento especial</span>
       <div class="pill-row" id="bano2-equip">
         <span class="pill" data-val="Tina">Tina</span>
@@ -931,6 +905,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="bano2-equip-otros">Otros</span>
       </div>
       <div class="sub-field" id="bano2-equip-otros">
+        <span class="sub-field-label">Otros equipamiento (especifique)</span>
         <textarea class="text-field" name="bano2_equip_otros" placeholder="¿Qué otro equipamiento desean en el baño secundario?" rows="2"></textarea>
       </div>
     </div>
@@ -943,13 +918,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
 
     <!-- Baño de visita -->
     <div class="q-block">
-      <span class="q-label">Baño de visita — tipo de intervención</span>
-      <div class="radio-group" id="bano3-nivel-group">
-        <div class="radio-item" data-val="Renovación completa"><span class="radio-dot"></span> Renovación completa</div>
-        <div class="radio-item" data-val="Solo enchapes y griferías"><span class="radio-dot"></span> Solo enchapes y griferías</div>
-      </div>
-    </div>
-    <div class="q-block">
       <span class="q-label">Baño de visita — equipamiento especial</span>
       <div class="pill-row" id="bano3-equip">
         <span class="pill" data-val="Espejo con luz">Espejo con luz</span>
@@ -958,6 +926,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="bano3-equip-otros">Otros</span>
       </div>
       <div class="sub-field" id="bano3-equip-otros">
+        <span class="sub-field-label">Otros equipamiento (especifique)</span>
         <textarea class="text-field" name="bano3_equip_otros" placeholder="¿Qué otro equipamiento desean en el baño de visita?" rows="2"></textarea>
       </div>
     </div>
@@ -990,6 +959,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
         <span class="pill otros-trigger" data-val="Otros" data-target="musthaves-otros">Otros</span>
       </div>
       <div class="sub-field" id="musthaves-otros">
+        <span class="sub-field-label">Otros must-haves (especifique)</span>
         <textarea class="text-field" name="musthaves_otros" placeholder="¿Qué otros must-haves tienen en mente?" rows="2"></textarea>
       </div>
     </div>
@@ -1045,6 +1015,16 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <h1 class="page-title">Briefs <em>recibidos</em></h1>
   </div>
   <div class="users-grid" id="usersGrid"></div>
+  <div class="brief-viewer" id="briefViewer">
+    <div class="brief-viewer-header">
+      <h2 class="brief-viewer-title" id="viewerTitle">Brief</h2>
+      <div class="brief-viewer-actions">
+        <button type="button" class="btn-copy" id="btnCopyBrief">Copiar texto</button>
+        <button type="button" class="btn-close" onclick="closeViewer()">Cerrar</button>
+      </div>
+    </div>
+    <div class="brief-content" id="briefContent"></div>
+  </div>
 </div>
 <div class="modal-overlay" id="modalOverlay" data-clear-user="">
   <div class="modal" onclick="event.stopPropagation()">
@@ -1152,6 +1132,7 @@ function applyRoute() {
   if (successScreen) { successScreen.classList.remove('show'); successScreen.style.display = 'none'; }
   if (adminTopbar) adminTopbar.style.display = 'none';
   if (adminApp) adminApp.style.display = 'none';
+  closeViewer();
   closeModal();
 
   document.getElementById('loginError').textContent = '';
@@ -1357,9 +1338,6 @@ function collectState() {
   });
 
   // Age buttons
-  document.querySelectorAll('.age-btn.active').forEach(btn => {
-    state['age__cristobal'] = btn.dataset.val;
-  });
 
   // Textareas + text fields
   document.querySelectorAll('textarea, input[type=text]').forEach(f => {
@@ -1412,11 +1390,6 @@ function restoreState(state) {
         if (btn.dataset.val == val) btn.classList.add('active');
       });
     }
-    else if (key === 'age__cristobal') {
-      document.querySelectorAll('.age-btn').forEach(btn => {
-        if (btn.dataset.val === val) btn.classList.add('active');
-      });
-    }
     else if (key.startsWith('text__')) {
       const name = key.replace('text__', '');
       const field = document.querySelector(`[name="${name}"]`);
@@ -1431,7 +1404,7 @@ function restoreState(state) {
 function saveProgress() {
   if (!currentUser) return;
   const state = collectState();
-  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify(state));
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: Date.now() }));
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Guardado ✓';
   btn.classList.add('saved');
@@ -1439,6 +1412,12 @@ function saveProgress() {
     btn.textContent = 'Guardar';
     btn.classList.remove('saved');
   }, 2000);
+}
+
+function saveProgressSilent() {
+  if (!currentUser) return;
+  const state = collectState();
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: Date.now() }));
 }
 
 function clearFormState() {
@@ -1457,14 +1436,33 @@ function loadProgress() {
   if (!currentUser) return;
   const raw = localStorage.getItem('hp_brief_' + currentUser);
   if (raw) {
-    try { restoreState(JSON.parse(raw)); } catch(e) {}
+    try {
+      const parsed = JSON.parse(raw);
+      const state = parsed && parsed.state != null ? parsed.state : parsed;
+      restoreState(state);
+    } catch(e) {}
   } else {
     clearFormState();
   }
 }
 
-// Auto-save every 30s
-setInterval(() => { if (currentUser) saveProgress(); }, 30000);
+// Auto-guardado: al cambiar algo se guarda en 1.5s (así el backoffice siempre tiene lo último)
+var autoSaveTimer = null;
+function scheduleAutoSave() {
+  if (!currentUser) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(function() { saveProgressSilent(); }, 1500);
+}
+var form = document.getElementById('briefForm');
+if (form) {
+  form.addEventListener('input', scheduleAutoSave);
+  form.addEventListener('change', scheduleAutoSave);
+}
+document.addEventListener('click', function(e) {
+  if (e.target.closest('.pill, .radio-item, .scale-btn, .age-btn')) scheduleAutoSave();
+});
+// Redundancia cada 15s por si no se dispararon eventos
+setInterval(function() { if (currentUser) saveProgressSilent(); }, 15000);
 
 // ═══════════════════════════════════════════════
 // BUILD EMAIL / STORAGE BODY
@@ -1483,14 +1481,12 @@ function buildReport(state) {
 
     'pills__cocina-muebles':    'Cocina · Muebles a reutilizar',
     'radio__cocina-nivel-group':'Cocina · Tipo de intervención',
-    'pills__cocina-enchapes':   'Cocina · Enchapes',
     'pills__cocina-artefactos':  'Cocina · Artefactos adicionales',
     'text__cocina_artefactos_otros': 'Cocina · Artefactos (otros)',
     'text__cocina_notas':       'Cocina · Notas',
     'scale__cocina_prioridad':  'Cocina · Prioridad de inversión',
 
     'pills__dorm1-muebles':     'Dorm. Principal · Muebles a reutilizar',
-    'radio__dorm1-nivel-group': 'Dorm. Principal · Intervención',
     'radio__dorm1-tv-group':    'Dorm. Principal · TV',
     'text__dorm1_tv_detalle':   'Dorm. Principal · TV (detalle)',
     'pills__wc-el':             'Closet de él',
@@ -1503,8 +1499,9 @@ function buildReport(state) {
     'scale__dorm1_prioridad':   'Dorm. Principal · Prioridad',
 
     'pills__cristobal-muebles': 'Cristóbal · Muebles a reutilizar',
-    'age__cristobal':           'Cristóbal · Edad',
-    'radio__cristobal-evol-group':'Cristóbal · Mobiliario evolutivo',
+    'text__cristobal_edad':     'Cristóbal · Edad',
+    'radio__cristobal-evol-group':'Cristóbal · Mob. evolutivo',
+    'text__cristobal_evol_notas':'Cristóbal · Anotaciones mob. evolutivo',
     'text__cristobal_notas':    'Cristóbal · Notas',
     'scale__cristobal_prioridad':'Cristóbal · Prioridad',
 
@@ -1516,15 +1513,12 @@ function buildReport(state) {
     'text__family_notas':       'Family Room · Notas',
     'scale__family_prioridad':  'Family Room · Prioridad',
 
-    'radio__bano1-nivel-group': 'Baño Principal · Intervención',
     'pills__bano1-equip':       'Baño Principal · Equipamiento',
     'text__bano1_equip_otros':  'Baño Principal · Equipamiento (otros)',
     'text__bano1_notas':        'Baño Principal · Notas',
-    'radio__bano2-nivel-group': 'Baño Secundario · Intervención',
     'pills__bano2-equip':       'Baño Secundario · Equipamiento',
     'text__bano2_equip_otros':  'Baño Secundario · Equipamiento (otros)',
     'text__bano2_notas':        'Baño Secundario · Notas',
-    'radio__bano3-nivel-group': 'Baño de Visita · Intervención',
     'pills__bano3-equip':       'Baño de Visita · Equipamiento',
     'text__bano3_equip_otros':  'Baño de Visita · Equipamiento (otros)',
     'text__bano3_notas':        'Baño de Visita · Notas',
@@ -1561,10 +1555,12 @@ document.getElementById('briefForm').addEventListener('submit', async (e) => {
   const report = buildReport(state);
 
   // Save final snapshot to localStorage (keyed by user + date)
-  const finalKey = `hp_brief_${currentUser}_FINAL_${Date.now()}`;
+  const now = Date.now();
+  const finalKey = `hp_brief_${currentUser}_FINAL_${now}`;
   localStorage.setItem(finalKey, JSON.stringify({ report, state, submittedAt: new Date().toISOString() }));
 
-  // Also save readable text version
+  // Also save progress so backoffice shows this state until next Guardar
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: now }));
   localStorage.setItem(`hp_brief_${currentUser}_report`, report);
 
   setTimeout(() => { window.location.hash = 'success'; }, 600);
@@ -1581,7 +1577,20 @@ function escapeHtml(str) {
 }
 function getUserData(user) {
   const report = localStorage.getItem('hp_brief_' + user + '_report');
-  const progress = localStorage.getItem('hp_brief_' + user);
+  const progressRaw = localStorage.getItem('hp_brief_' + user);
+  let progressState = null;
+  let progressSavedAt = 0;
+  if (progressRaw) {
+    try {
+      const parsed = JSON.parse(progressRaw);
+      if (parsed && parsed.state != null) {
+        progressState = parsed.state;
+        progressSavedAt = parsed.savedAt || 0;
+      } else {
+        progressState = parsed;
+      }
+    } catch(e) {}
+  }
   let latestFinal = null;
   let latestTime = 0;
   for (let i = 0; i < localStorage.length; i++) {
@@ -1595,12 +1604,15 @@ function getUserData(user) {
   if (latestFinal) {
     try { finalState = JSON.parse(localStorage.getItem(latestFinal)).state || null; } catch(e) {}
   }
+  // Mostrar siempre el estado más reciente: si el borrador se guardó después del último envío, usar borrador
+  const useProgress = progressSavedAt > latestTime && progressState != null;
+  const state = useProgress ? progressState : (finalState || progressState);
   return {
     hasSubmission: latestTime > 0,
-    hasDraft: !!progress && latestTime === 0,
-    isEmpty: !progress && latestTime === 0,
+    hasDraft: !!progressRaw && latestTime === 0,
+    isEmpty: !progressRaw && latestTime === 0,
     report: report || null,
-    state: finalState || (progress ? JSON.parse(progress) : null),
+    state,
     submittedAt: latestTime || null,
   };
 }
@@ -1619,17 +1631,17 @@ function renderUserCards() {
     else if (data.hasDraft) metaText = 'Progreso guardado — no enviado aún';
     const card = document.createElement('div');
     card.className = 'user-card';
-    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="downloadBriefPDF(\'' + user + '\')">Descargar brief</button><button class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="confirmClear(\'' + user + '\')">Limpiar</button></div>';
+    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="viewBrief(\'' + user + '\')">Ver brief</button><button class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="confirmClear(\'' + user + '\')">Limpiar</button></div>';
     grid.appendChild(card);
   });
 }
 var REPORT_LABELS = {
   'pills__sala-muebles':'Sala · Muebles a reutilizar','radio__sala-tv-group':'Sala · TV','text__sala_tv_detalle':'Sala · TV (detalle)','radio__sala-veg-group':'Sala · Vegetación','text__sala_veg_detalle':'Sala · Vegetación (detalle)','text__sala_notas':'Sala · Notas','scale__sala_prioridad':'Sala · Prioridad',
-  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-enchapes':'Cocina · Enchapes','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
-  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-nivel-group':'Dorm. Principal · Intervención','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
-  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','age__cristobal':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mobiliario evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
+  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
+  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
+  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','text__cristobal_edad':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mob. evolutivo','text__cristobal_evol_notas':'Cristóbal · Anot. mob. evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
   'pills__family-muebles':'Family Room · Muebles a reutilizar','pills__family-uso':'Family Room · Uso principal','text__family_uso_otros':'Family Room · Uso (otros)','radio__family-tv-group':'Family Room · TV','text__family_tv_detalle':'Family Room · TV (detalle)','text__family_notas':'Family Room · Notas','scale__family_prioridad':'Family Room · Prioridad',
-  'radio__bano1-nivel-group':'Baño Principal · Intervención','pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','radio__bano2-nivel-group':'Baño Secundario · Intervención','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','radio__bano3-nivel-group':'Baño de Visita · Intervención','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
+  'pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
   'pills__musthaves-list':'Must-Haves','text__musthaves_otros':'Must-Haves (otros)','radio__puertas-grupo':'Puertas interiores','text__puertas_detalle':'Puertas (detalle)','text__notas_finales':'Notas finales',
 };
 function getBriefText(user) {
@@ -1647,48 +1659,91 @@ function getBriefText(user) {
   });
   return lines.join('\n');
 }
-function downloadBriefPDF(user) {
+function viewBrief(user) {
+  var label = USER_LABELS[user];
+  var data = getUserData(user);
+  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
+  var content = document.getElementById('briefContent');
+  if (data.state && Object.keys(data.state).length) {
+    content.innerHTML = renderStateHTML(data.state);
+  } else if (data.report) {
+    content.innerHTML = '<div class="report-fallback">' + escapeHtml(data.report) + '</div>';
+  } else {
+    content.innerHTML = '<p class="empty-state">Sin datos para este usuario.</p>';
+  }
+  document.getElementById('briefViewer').classList.add('show');
+  document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('btnCopyBrief').onclick = function() { copyBrief(user); };
+}
+function closeViewer() {
+  var v = document.getElementById('briefViewer');
+  var c = document.getElementById('briefContent');
+  if (v) v.classList.remove('show');
+  if (c) c.innerHTML = '';
+}
+function renderStateHTML(state) {
+  if (!state || !Object.keys(state).length) return '<p class="empty-state">Borrador vacío — el usuario no ha ingresado datos aún.</p>';
+  var rooms = [
+    { name: 'Sala – Comedor', priorityKey: 'scale__sala_prioridad', chips: [{ key: 'pills__sala-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__sala_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__sala-tv-group', label: 'TV', detail: { key: 'text__sala_tv_detalle', label: 'Detalle TV' } }, { key: 'radio__sala-veg-group', label: 'Vegetación', detail: { key: 'text__sala_veg_detalle', label: 'Detalle vegetación' } }], notes: [{ key: 'text__sala_notas', label: 'Notas' }] },
+    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad', chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cocina_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales', detail: { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' } }], decisions: [{ key: 'radio__cocina-nivel-group', label: 'Intervención' }], notes: [{ key: 'text__cocina_notas', label: 'Notas' }] },
+    { name: 'Dormitorio Principal', priorityKey: 'scale__dorm1_prioridad', chips: [{ key: 'pills__dorm1-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__dorm1_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__wc-el', label: 'Closet de él', detail: { key: 'text__wc_el_otros', label: 'Closet de él — otros' }, detailNotes: { key: 'text__wc_el_notas', label: 'Closet de él — notas' } }, { key: 'pills__wc-ella', label: 'Closet de ella', detail: { key: 'text__wc_ella_otros', label: 'Closet de ella — otros' }, detailNotes: { key: 'text__wc_ella_notas', label: 'Closet de ella — notas' } }], decisions: [{ key: 'radio__dorm1-tv-group', label: 'TV', detail: { key: 'text__dorm1_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__dorm1_notas', label: 'Notas' }] },
+    { name: 'Dormitorio Cristóbal', priorityKey: 'scale__cristobal_prioridad', chips: [{ key: 'pills__cristobal-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cristobal_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__cristobal-evol-group', label: 'Mob. evolutivo', detail: { key: 'text__cristobal_evol_notas', label: 'Anotaciones mob. evolutivo' } }], notes: [{ key: 'text__cristobal_edad', label: 'Edad' }, { key: 'text__cristobal_notas', label: 'Notas' }] },
+    { name: 'Family Room', priorityKey: 'scale__family_prioridad', chips: [{ key: 'pills__family-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__family_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__family-uso', label: 'Uso principal', detail: { key: 'text__family_uso_otros', label: 'Otros usos' } }], decisions: [{ key: 'radio__family-tv-group', label: 'TV', detail: { key: 'text__family_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__family_notas', label: 'Notas' }] },
+  ];
+  var banos = [
+    { name: 'Baño Principal', decisions: [], chips: [{ key: 'pills__bano1-equip', label: 'Equipamiento', detail: { key: 'text__bano1_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano1_notas', label: 'Notas' }] },
+    { name: 'Baño Secundario', decisions: [], chips: [{ key: 'pills__bano2-equip', label: 'Equipamiento', detail: { key: 'text__bano2_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano2_notas', label: 'Notas' }] },
+    { name: 'Baño de Visita', decisions: [], chips: [{ key: 'pills__bano3-equip', label: 'Equipamiento', detail: { key: 'text__bano3_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano3_notas', label: 'Notas' }] },
+  ];
+  function rc(val) { var items = Array.isArray(val) ? val : [val]; return items.map(function(v) { return '<span class="chip">' + escapeHtml(v) + '</span>'; }).join(''); }
+  function noteBlock(key, label) { var val = state[key]; if (!val) return ''; return '<div class="field-group"><div class="note-block"><p class="note-label">' + escapeHtml(label) + '</p>' + escapeHtml(val) + '</div></div>'; }
+  function rf(chips, decisions, notes) {
+    var h = '';
+    chips.forEach(function(f) { var val = state[f.key]; if (!val || (Array.isArray(val) && !val.length)) return; h += '<div class="field-group"><p class="field-label">' + escapeHtml(f.label) + '</p><div class="chip-row">' + rc(val) + '</div></div>'; if (f.detail) h += noteBlock(f.detail.key, f.detail.label); if (f.detailNotes) h += noteBlock(f.detailNotes.key, f.detailNotes.label); });
+    decisions.forEach(function(f) { var val = state[f.key]; if (!val) return; h += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">' + escapeHtml(f.label) + ':</span> ' + escapeHtml(val) + '</span></div>'; if (f.detail) h += noteBlock(f.detail.key, f.detail.label); });
+    notes.forEach(function(f) { h += noteBlock(f.key, f.label); });
+    return h;
+  }
+  var html = '';
+  var priorities = rooms.map(function(r) { return { name: r.name, val: parseInt(state[r.priorityKey]) || 0 }; }).filter(function(p) { return p.val > 0; }).sort(function(a, b) { return b.val - a.val; });
+  if (priorities.length) {
+    html += '<div class="field-group"><p class="field-label">Prioridad de inversión por espacio</p><div class="priority-summary">';
+    priorities.forEach(function(p) { var bars = ''; for (var i = 1; i <= 5; i++) bars += '<span class="priority-bar-seg' + (i <= p.val ? ' filled' : '') + '"></span>'; html += '<div class="priority-card"><span class="priority-card-name">' + escapeHtml(p.name) + '</span><div class="priority-bar">' + bars + '</div></div>'; });
+    html += '</div></div>';
+  }
+  rooms.forEach(function(room) {
+    var priority = state[room.priorityKey]; var body = rf(room.chips, room.decisions, room.notes);
+    if (!body && !priority) return;
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">' + escapeHtml(room.name) + '</span>';
+    if (priority) html += '<span class="priority-header-wrap"><span class="priority-header-label">Prioridad de inversión</span><span class="priority-badge">' + escapeHtml(priority) + '</span></span>';
+    html += '</div><div class="room-card-body">' + (body || '<p class="empty-state">Sin datos aún</p>') + '</div></div>';
+  });
+  var hasBano = banos.some(function(b) { return b.decisions.some(function(d) { return state[d.key]; }) || b.chips.some(function(c) { return state[c.key]; }) || b.notes.some(function(n) { return state[n.key]; }); });
+  if (hasBano) {
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Baños</span></div><div class="room-card-body">';
+    var first = true;
+    banos.forEach(function(bano) { var body = rf(bano.chips, bano.decisions, bano.notes); if (!body) return; html += '<div class="' + (first ? 'field-group' : 'sub-section') + '"><p class="sub-section-name">' + escapeHtml(bano.name) + '</p>' + body + '</div>'; first = false; });
+    html += '</div></div>';
+  }
+  var mh = state['pills__musthaves-list'], mhO = state['text__musthaves_otros'], puertas = state['radio__puertas-grupo'], puertasDet = state['text__puertas_detalle'], notasFin = state['text__notas_finales'];
+  if (mh || mhO || puertas || puertasDet || notasFin) {
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Generales</span></div><div class="room-card-body">';
+    if (mh) html += '<div class="field-group"><p class="field-label">Must-Haves</p><div class="chip-row">' + rc(mh) + '</div></div>';
+    if (mhO) html += '<div class="field-group"><div class="note-block"><p class="note-label">Must-Haves — otros</p>' + escapeHtml(mhO) + '</div></div>';
+    if (puertas) html += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">Puertas interiores:</span> ' + escapeHtml(puertas) + '</span></div>';
+    if (puertasDet) html += '<div class="field-group"><div class="note-block"><p class="note-label">Puertas — detalle</p>' + escapeHtml(puertasDet) + '</div></div>';
+    if (notasFin) html += '<div class="field-group"><div class="note-block"><p class="note-label">Notas finales</p>' + escapeHtml(notasFin) + '</div></div>';
+    html += '</div></div>';
+  }
+  return html || '<p class="empty-state">Sin respuestas registradas.</p>';
+}
+function copyBrief(user) {
   var text = getBriefText(user);
-  if (!text || text.trim() === 'Sin datos para este usuario.') {
-    alert('No hay datos para descargar.');
-    return;
-  }
-  try {
-    var JsPDF = (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof window.jsPDF !== 'undefined' ? window.jsPDF : null);
-    if (!JsPDF) {
-      alert('Error: no se pudo cargar la librería PDF. Comprueba tu conexión o recarga la página.');
-      return;
-    }
-    var doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    var label = USER_LABELS[user];
-    doc.setFontSize(14);
-    doc.text('BRIEF H&P · ' + label, 20, 20);
-    doc.setFontSize(10);
-    var margin = 20;
-    var pageW = doc.internal.pageSize.getWidth();
-    var maxW = pageW - margin * 2;
-    var y = 28;
-    var lineHeight = 6;
-    var lines = text.split('\n');
-    lines.forEach(function(line) {
-      if (y > 270) { doc.addPage(); y = 20; }
-      var wrapped = doc.splitTextToSize(line || ' ', maxW);
-      wrapped.forEach(function(ln) { doc.text(ln, margin, y); y += lineHeight; });
-    });
-    var filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-    var blob = doc.output('blob');
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error('downloadBriefPDF', e);
-    alert('Error al generar el PDF: ' + (e && e.message ? e.message : String(e)));
-  }
+  if (!text || text.trim() === 'Sin datos para este usuario.') { alert('No hay datos para copiar.'); return; }
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = document.getElementById('btnCopyBrief');
+    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(function() { btn.textContent = 'Copiar texto'; }, 2000); }
+  }).catch(function() { alert('No se pudo copiar al portapapeles.'); });
 }
 function confirmClear(user) {
   var overlay = document.getElementById('modalOverlay');
@@ -1719,6 +1774,7 @@ function executeClear() {
   }
   keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
+  closeViewer();
   renderUserCards();
 }
 document.getElementById('modalOverlay').addEventListener('click', e => {

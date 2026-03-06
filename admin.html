@@ -6,7 +6,6 @@
 <title>Admin · H&P Design Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/assets/main.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -198,6 +197,8 @@ body {
 .room-card:last-child { margin-bottom: 0; }
 .room-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
 .room-card-name { font-family: var(--serif); font-size: 1.15rem; font-weight: 400; }
+.priority-header-wrap { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.priority-header-label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .priority-badge { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--text); color: #fff; font-size: 12px; font-weight: 500; font-family: var(--sans); flex-shrink: 0; }
 .room-card-body { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -213,7 +214,7 @@ body {
 .decision-badge-label { font-weight: 500; color: var(--muted); margin-right: 0.25rem; }
 
 /* ── NOTE BLOCKS ── */
-.note-block { background: var(--subtle); border-radius: var(--radius); padding: 0.65rem 0.85rem; font-size: 13px; color: var(--text); line-height: 1.5; border-left: 3px solid var(--border); }
+.note-block { background: var(--subtle); border-radius: var(--radius); padding: 0.65rem 0.85rem; font-size: 13px; color: var(--text); line-height: 1.5; border-left: 3px solid var(--border); overflow-wrap: break-word; word-break: break-word; white-space: pre-wrap; max-width: 100%; box-sizing: border-box; }
 .note-block .note-label { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.2rem; }
 
 /* ── SUB-SECTIONS (baños) ── */
@@ -338,6 +339,17 @@ body {
 
   <div class="users-grid" id="usersGrid"></div>
 
+  <div class="brief-viewer" id="briefViewer">
+    <div class="brief-viewer-header">
+      <h2 class="brief-viewer-title" id="viewerTitle">Brief</h2>
+      <div class="brief-viewer-actions">
+        <button type="button" class="btn-copy" id="btnCopyBrief">Copiar texto</button>
+        <button type="button" class="btn-close" onclick="closeViewer()">Cerrar</button>
+      </div>
+    </div>
+    <div class="brief-content" id="briefContent"></div>
+  </div>
+
 </div>
 
 <!-- CONFIRM MODAL -->
@@ -392,7 +404,20 @@ function logout() {
 // ── GET USER DATA ──
 function getUserData(user) {
   const report = localStorage.getItem(`hp_brief_${user}_report`);
-  const progress = localStorage.getItem(`hp_brief_${user}`);
+  const progressRaw = localStorage.getItem(`hp_brief_${user}`);
+  let progressState = null;
+  let progressSavedAt = 0;
+  if (progressRaw) {
+    try {
+      const parsed = JSON.parse(progressRaw);
+      if (parsed && parsed.state != null) {
+        progressState = parsed.state;
+        progressSavedAt = parsed.savedAt || 0;
+      } else {
+        progressState = parsed;
+      }
+    } catch(e) {}
+  }
   let latestFinal = null;
   let latestTime = 0;
   for (let i = 0; i < localStorage.length; i++) {
@@ -406,12 +431,15 @@ function getUserData(user) {
   if (latestFinal) {
     try { finalState = JSON.parse(localStorage.getItem(latestFinal)).state || null; } catch(e) {}
   }
+  // Mostrar siempre el estado más reciente: si el borrador se guardó después del último envío, usar borrador
+  const useProgress = progressSavedAt > latestTime && progressState != null;
+  const state = useProgress ? progressState : (finalState || progressState);
   return {
     hasSubmission: !!latestFinal,
-    hasDraft: !!progress && !latestFinal,
-    isEmpty: !progress && !latestFinal,
+    hasDraft: !!progressRaw && !latestFinal,
+    isEmpty: !progressRaw && !latestFinal,
     report: report || null,
-    state: finalState || (progress ? JSON.parse(progress) : null),
+    state,
     submittedAt: latestTime || null,
   };
 }
@@ -441,7 +469,7 @@ function renderUserCards() {
       </div>
       <p class="user-meta">${escapeHtml(metaText)}</p>
       <div class="user-actions">
-        <button class="btn-view" ${data.isEmpty ? 'disabled' : ''} onclick="downloadBriefPDF('${user}')">Descargar brief</button>
+        <button class="btn-view" ${data.isEmpty ? 'disabled' : ''} onclick="viewBrief('${user}')">Ver brief</button>
         <button class="btn-clear" ${data.isEmpty ? 'disabled' : ''} onclick="confirmClear('${user}')">Limpiar</button>
       </div>
     `;
@@ -452,11 +480,11 @@ function renderUserCards() {
 // ── TEXTO DEL BRIEF (para PDF) ──
 const REPORT_LABELS = {
   'pills__sala-muebles':'Sala · Muebles a reutilizar','radio__sala-tv-group':'Sala · TV','text__sala_tv_detalle':'Sala · TV (detalle)','radio__sala-veg-group':'Sala · Vegetación','text__sala_veg_detalle':'Sala · Vegetación (detalle)','text__sala_notas':'Sala · Notas','scale__sala_prioridad':'Sala · Prioridad',
-  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-enchapes':'Cocina · Enchapes','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
-  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-nivel-group':'Dorm. Principal · Intervención','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
-  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','age__cristobal':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mobiliario evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
+  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
+  'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
+  'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','text__cristobal_edad':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mob. evolutivo','text__cristobal_evol_notas':'Cristóbal · Anot. mob. evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
   'pills__family-muebles':'Family Room · Muebles a reutilizar','pills__family-uso':'Family Room · Uso principal','text__family_uso_otros':'Family Room · Uso (otros)','radio__family-tv-group':'Family Room · TV','text__family_tv_detalle':'Family Room · TV (detalle)','text__family_notas':'Family Room · Notas','scale__family_prioridad':'Family Room · Prioridad',
-  'radio__bano1-nivel-group':'Baño Principal · Intervención','pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','radio__bano2-nivel-group':'Baño Secundario · Intervención','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','radio__bano3-nivel-group':'Baño de Visita · Intervención','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
+  'pills__bano1-equip':'Baño Principal · Equipamiento','text__bano1_equip_otros':'Baño Principal · Equip. (otros)','text__bano1_notas':'Baño Principal · Notas','pills__bano2-equip':'Baño Secundario · Equipamiento','text__bano2_equip_otros':'Baño Secundario · Equip. (otros)','text__bano2_notas':'Baño Secundario · Notas','pills__bano3-equip':'Baño de Visita · Equipamiento','text__bano3_equip_otros':'Baño de Visita · Equip. (otros)','text__bano3_notas':'Baño de Visita · Notas',
   'pills__musthaves-list':'Must-Haves','text__musthaves_otros':'Must-Haves (otros)','radio__puertas-grupo':'Puertas interiores','text__puertas_detalle':'Puertas (detalle)','text__notas_finales':'Notas finales',
 };
 
@@ -476,48 +504,123 @@ function getBriefText(user) {
   return lines.join('\n');
 }
 
-function downloadBriefPDF(user) {
+function viewBrief(user) {
+  const label = USER_LABELS[user];
+  const data = getUserData(user);
+  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
+  const content = document.getElementById('briefContent');
+  if (data.state && Object.keys(data.state).length) {
+    content.innerHTML = renderStateHTML(data.state);
+  } else if (data.report) {
+    content.innerHTML = '<div class="report-fallback">' + escapeHtml(data.report) + '</div>';
+  } else {
+    content.innerHTML = '<p class="empty-state">Sin datos para este usuario.</p>';
+  }
+  document.getElementById('briefViewer').classList.add('show');
+  document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('btnCopyBrief').onclick = function() { copyBrief(user); };
+}
+
+function closeViewer() {
+  document.getElementById('briefViewer').classList.remove('show');
+  document.getElementById('briefContent').innerHTML = '';
+}
+
+function renderStateHTML(state) {
+  if (!state || !Object.keys(state).length) return '<p class="empty-state">Borrador vacío — el usuario no ha ingresado datos aún.</p>';
+  const rooms = [
+    { name: 'Sala – Comedor', priorityKey: 'scale__sala_prioridad', chips: [{ key: 'pills__sala-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__sala_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__sala-tv-group', label: 'TV', detail: { key: 'text__sala_tv_detalle', label: 'Detalle TV' } }, { key: 'radio__sala-veg-group', label: 'Vegetación', detail: { key: 'text__sala_veg_detalle', label: 'Detalle vegetación' } }], notes: [{ key: 'text__sala_notas', label: 'Notas' }] },
+    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad', chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cocina_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales', detail: { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' } }], decisions: [{ key: 'radio__cocina-nivel-group', label: 'Intervención' }], notes: [{ key: 'text__cocina_notas', label: 'Notas' }] },
+    { name: 'Dormitorio Principal', priorityKey: 'scale__dorm1_prioridad', chips: [{ key: 'pills__dorm1-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__dorm1_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__wc-el', label: 'Closet de él', detail: { key: 'text__wc_el_otros', label: 'Closet de él — otros' }, detailNotes: { key: 'text__wc_el_notas', label: 'Closet de él — notas' } }, { key: 'pills__wc-ella', label: 'Closet de ella', detail: { key: 'text__wc_ella_otros', label: 'Closet de ella — otros' }, detailNotes: { key: 'text__wc_ella_notas', label: 'Closet de ella — notas' } }], decisions: [{ key: 'radio__dorm1-tv-group', label: 'TV', detail: { key: 'text__dorm1_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__dorm1_notas', label: 'Notas' }] },
+    { name: 'Dormitorio Cristóbal', priorityKey: 'scale__cristobal_prioridad', chips: [{ key: 'pills__cristobal-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cristobal_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__cristobal-evol-group', label: 'Mob. evolutivo', detail: { key: 'text__cristobal_evol_notas', label: 'Anotaciones mob. evolutivo' } }], notes: [{ key: 'text__cristobal_edad', label: 'Edad' }, { key: 'text__cristobal_notas', label: 'Notas' }] },
+    { name: 'Family Room', priorityKey: 'scale__family_prioridad', chips: [{ key: 'pills__family-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__family_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__family-uso', label: 'Uso principal', detail: { key: 'text__family_uso_otros', label: 'Otros usos' } }], decisions: [{ key: 'radio__family-tv-group', label: 'TV', detail: { key: 'text__family_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__family_notas', label: 'Notas' }] },
+  ];
+  const banos = [
+    { name: 'Baño Principal', decisions: [], chips: [{ key: 'pills__bano1-equip', label: 'Equipamiento', detail: { key: 'text__bano1_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano1_notas', label: 'Notas' }] },
+    { name: 'Baño Secundario', decisions: [], chips: [{ key: 'pills__bano2-equip', label: 'Equipamiento', detail: { key: 'text__bano2_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano2_notas', label: 'Notas' }] },
+    { name: 'Baño de Visita', decisions: [], chips: [{ key: 'pills__bano3-equip', label: 'Equipamiento', detail: { key: 'text__bano3_equip_otros', label: 'Otros' } }], notes: [{ key: 'text__bano3_notas', label: 'Notas' }] },
+  ];
+  function renderChips(val) {
+    const items = Array.isArray(val) ? val : [val];
+    return items.map(v => '<span class="chip">' + escapeHtml(v) + '</span>').join('');
+  }
+  function noteBlock(key, label) {
+    const val = state[key];
+    if (!val) return '';
+    return '<div class="field-group"><div class="note-block"><p class="note-label">' + escapeHtml(label) + '</p>' + escapeHtml(val) + '</div></div>';
+  }
+  function renderFields(chips, decisions, notes) {
+    let h = '';
+    chips.forEach(({ key, label, detail, detailNotes }) => {
+      const val = state[key];
+      if (!val || (Array.isArray(val) && !val.length)) return;
+      h += '<div class="field-group"><p class="field-label">' + escapeHtml(label) + '</p><div class="chip-row">' + renderChips(val) + '</div></div>';
+      if (detail) h += noteBlock(detail.key, detail.label);
+      if (detailNotes) h += noteBlock(detailNotes.key, detailNotes.label);
+    });
+    decisions.forEach(({ key, label, detail }) => {
+      const val = state[key];
+      if (!val) return;
+      h += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">' + escapeHtml(label) + ':</span> ' + escapeHtml(val) + '</span></div>';
+      if (detail) h += noteBlock(detail.key, detail.label);
+    });
+    notes.forEach(({ key, label }) => { h += noteBlock(key, label); });
+    return h;
+  }
+  let html = '';
+  const priorities = rooms.map(r => ({ name: r.name, val: parseInt(state[r.priorityKey]) || 0 })).filter(p => p.val > 0).sort((a, b) => b.val - a.val);
+  if (priorities.length) {
+    html += '<div class="field-group"><p class="field-label">Prioridad de inversión por espacio</p><div class="priority-summary">';
+    priorities.forEach(({ name, val }) => {
+      let bars = '';
+      for (let i = 1; i <= 5; i++) bars += '<span class="priority-bar-seg' + (i <= val ? ' filled' : '') + '"></span>';
+      html += '<div class="priority-card"><span class="priority-card-name">' + escapeHtml(name) + '</span><div class="priority-bar">' + bars + '</div></div>';
+    });
+    html += '</div></div>';
+  }
+  rooms.forEach(room => {
+    const priority = state[room.priorityKey];
+    const body = renderFields(room.chips, room.decisions, room.notes);
+    if (!body && !priority) return;
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">' + escapeHtml(room.name) + '</span>';
+    if (priority) html += '<span class="priority-header-wrap"><span class="priority-header-label">Prioridad de inversión</span><span class="priority-badge">' + escapeHtml(priority) + '</span></span>';
+    html += '</div><div class="room-card-body">' + (body || '<p class="empty-state">Sin datos aún</p>') + '</div></div>';
+  });
+  const hasBano = banos.some(b => b.decisions.some(d => state[d.key]) || b.chips.some(c => state[c.key]) || b.notes.some(n => state[n.key]));
+  if (hasBano) {
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Baños</span></div><div class="room-card-body">';
+    let first = true;
+    banos.forEach(bano => {
+      const body = renderFields(bano.chips, bano.decisions, bano.notes);
+      if (!body) return;
+      html += '<div class="' + (first ? 'field-group' : 'sub-section') + '"><p class="sub-section-name">' + escapeHtml(bano.name) + '</p>' + body + '</div>';
+      first = false;
+    });
+    html += '</div></div>';
+  }
+  const mh = state['pills__musthaves-list'], mhOtros = state['text__musthaves_otros'], puertas = state['radio__puertas-grupo'], puertasDet = state['text__puertas_detalle'], notasFin = state['text__notas_finales'];
+  if (mh || mhOtros || puertas || puertasDet || notasFin) {
+    html += '<div class="room-card"><div class="room-card-header"><span class="room-card-name">Generales</span></div><div class="room-card-body">';
+    if (mh) html += '<div class="field-group"><p class="field-label">Must-Haves</p><div class="chip-row">' + renderChips(mh) + '</div></div>';
+    if (mhOtros) html += '<div class="field-group"><div class="note-block"><p class="note-label">Must-Haves — otros</p>' + escapeHtml(mhOtros) + '</div></div>';
+    if (puertas) html += '<div class="decision-row"><span class="decision-badge"><span class="decision-badge-label">Puertas interiores:</span> ' + escapeHtml(puertas) + '</span></div>';
+    if (puertasDet) html += '<div class="field-group"><div class="note-block"><p class="note-label">Puertas — detalle</p>' + escapeHtml(puertasDet) + '</div></div>';
+    if (notasFin) html += '<div class="field-group"><div class="note-block"><p class="note-label">Notas finales</p>' + escapeHtml(notasFin) + '</div></div>';
+    html += '</div></div>';
+  }
+  return html || '<p class="empty-state">Sin respuestas registradas.</p>';
+}
+
+function copyBrief(user) {
   const text = getBriefText(user);
   if (!text || text.trim() === 'Sin datos para este usuario.') {
-    alert('No hay datos para descargar.');
+    alert('No hay datos para copiar.');
     return;
   }
-  try {
-    const JsPDF = (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (typeof window.jsPDF !== 'undefined' ? window.jsPDF : null);
-    if (!JsPDF) {
-      alert('Error: no se pudo cargar la librería PDF. Comprueba tu conexión o recarga la página.');
-      return;
-    }
-    const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const label = USER_LABELS[user];
-    doc.setFontSize(14);
-    doc.text('BRIEF H&P · ' + label, 20, 20);
-    doc.setFontSize(10);
-    const margin = 20;
-    const pageW = doc.internal.pageSize.getWidth();
-    const maxW = pageW - margin * 2;
-    let y = 28;
-    const lineHeight = 6;
-    const lines = text.split('\n');
-    lines.forEach(line => {
-      if (y > 270) { doc.addPage(); y = 20; }
-      const wrapped = doc.splitTextToSize(line || ' ', maxW);
-      wrapped.forEach(ln => { doc.text(ln, margin, y); y += lineHeight; });
-    });
-    const filename = 'brief-' + user + '-' + new Date().toISOString().slice(0, 10) + '.pdf';
-    const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  } catch (e) {
-    console.error('downloadBriefPDF', e);
-    alert('Error al generar el PDF: ' + (e && e.message ? e.message : String(e)));
-  }
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btnCopyBrief');
+    if (btn) { btn.textContent = 'Copiado ✓'; setTimeout(() => { btn.textContent = 'Copiar texto'; }, 2000); }
+  }).catch(() => alert('No se pudo copiar al portapapeles.'));
 }
 
 // ── CLEAR ──
@@ -553,6 +656,7 @@ function executeClear() {
   }
   keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
   closeModal();
+  closeViewer();
   renderUserCards();
 }
 
