@@ -40,6 +40,7 @@ body {
   position: absolute; inset: 0; z-index: -1;
   width: 100%; height: 100%;
   object-fit: cover;
+  transform: scale(1.17);
 }
 #loginScreen .login-screen-overlay {
   position: absolute; inset: 0; z-index: 0;
@@ -585,16 +586,6 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <div class="sub-field" id="cocina-muebles-otros">
         <span class="sub-field-label">Otros muebles (especifique)</span>
         <textarea class="text-field" name="cocina_muebles_otros" placeholder="¿Qué otros elementos se mantienen?" rows="2"></textarea>
-      </div>
-    </div>
-
-    <!-- Tipo de intervención -->
-    <div class="q-block">
-      <span class="q-label">Tipo de intervención</span>
-      <div class="radio-group" id="cocina-nivel-group">
-        <div class="radio-item" data-val="Renovación completa — layout, muebles y acabados"><span class="radio-dot"></span> Renovación completa — layout, muebles y acabados</div>
-        <div class="radio-item" data-val="Refresh parcial — frentes, encimera o acabados"><span class="radio-dot"></span> Refresh parcial — frentes, encimera o acabados</div>
-        <div class="radio-item" data-val="Sin cambios estructurales"><span class="radio-dot"></span> Sin cambios estructurales</div>
       </div>
     </div>
 
@@ -1480,7 +1471,6 @@ function buildReport(state) {
     'scale__sala_prioridad':    'Sala · Prioridad de inversión',
 
     'pills__cocina-muebles':    'Cocina · Muebles a reutilizar',
-    'radio__cocina-nivel-group':'Cocina · Tipo de intervención',
     'pills__cocina-artefactos':  'Cocina · Artefactos adicionales',
     'text__cocina_artefactos_otros': 'Cocina · Artefactos (otros)',
     'text__cocina_notas':       'Cocina · Notas',
@@ -1637,7 +1627,7 @@ function renderUserCards() {
 }
 var REPORT_LABELS = {
   'pills__sala-muebles':'Sala · Muebles a reutilizar','radio__sala-tv-group':'Sala · TV','text__sala_tv_detalle':'Sala · TV (detalle)','radio__sala-veg-group':'Sala · Vegetación','text__sala_veg_detalle':'Sala · Vegetación (detalle)','text__sala_notas':'Sala · Notas','scale__sala_prioridad':'Sala · Prioridad',
-  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','radio__cocina-nivel-group':'Cocina · Tipo de intervención','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
+  'pills__cocina-muebles':'Cocina · Muebles a reutilizar','pills__cocina-artefactos':'Cocina · Artefactos adicionales','text__cocina_artefactos_otros':'Cocina · Artefactos (otros)','text__cocina_notas':'Cocina · Notas','scale__cocina_prioridad':'Cocina · Prioridad',
   'pills__dorm1-muebles':'Dorm. Principal · Muebles a reutilizar','radio__dorm1-tv-group':'Dorm. Principal · TV','text__dorm1_tv_detalle':'Dorm. Principal · TV (detalle)','pills__wc-el':'Closet de él','text__wc_el_otros':'Closet de él (otros)','text__wc_el_notas':'Closet de él (notas)','pills__wc-ella':'Closet de ella','text__wc_ella_otros':'Closet de ella (otros)','text__wc_ella_notas':'Closet de ella (notas)','text__dorm1_notas':'Dorm. Principal · Notas','scale__dorm1_prioridad':'Dorm. Principal · Prioridad',
   'pills__cristobal-muebles':'Cristóbal · Muebles a reutilizar','text__cristobal_edad':'Cristóbal · Edad','radio__cristobal-evol-group':'Cristóbal · Mob. evolutivo','text__cristobal_evol_notas':'Cristóbal · Anot. mob. evolutivo','text__cristobal_notas':'Cristóbal · Notas','scale__cristobal_prioridad':'Cristóbal · Prioridad',
   'pills__family-muebles':'Family Room · Muebles a reutilizar','pills__family-uso':'Family Room · Uso principal','text__family_uso_otros':'Family Room · Uso (otros)','radio__family-tv-group':'Family Room · TV','text__family_tv_detalle':'Family Room · TV (detalle)','text__family_notas':'Family Room · Notas','scale__family_prioridad':'Family Room · Prioridad',
@@ -1685,7 +1675,7 @@ function renderStateHTML(state) {
   if (!state || !Object.keys(state).length) return '<p class="empty-state">Borrador vacío — el usuario no ha ingresado datos aún.</p>';
   var rooms = [
     { name: 'Sala – Comedor', priorityKey: 'scale__sala_prioridad', chips: [{ key: 'pills__sala-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__sala_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__sala-tv-group', label: 'TV', detail: { key: 'text__sala_tv_detalle', label: 'Detalle TV' } }, { key: 'radio__sala-veg-group', label: 'Vegetación', detail: { key: 'text__sala_veg_detalle', label: 'Detalle vegetación' } }], notes: [{ key: 'text__sala_notas', label: 'Notas' }] },
-    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad', chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cocina_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales', detail: { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' } }], decisions: [{ key: 'radio__cocina-nivel-group', label: 'Intervención' }], notes: [{ key: 'text__cocina_notas', label: 'Notas' }] },
+    { name: 'Cocina', priorityKey: 'scale__cocina_prioridad', chips: [{ key: 'pills__cocina-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cocina_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__cocina-artefactos', label: 'Artefactos adicionales', detail: { key: 'text__cocina_artefactos_otros', label: 'Otros artefactos' } }], decisions: [], notes: [{ key: 'text__cocina_notas', label: 'Notas' }] },
     { name: 'Dormitorio Principal', priorityKey: 'scale__dorm1_prioridad', chips: [{ key: 'pills__dorm1-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__dorm1_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__wc-el', label: 'Closet de él', detail: { key: 'text__wc_el_otros', label: 'Closet de él — otros' }, detailNotes: { key: 'text__wc_el_notas', label: 'Closet de él — notas' } }, { key: 'pills__wc-ella', label: 'Closet de ella', detail: { key: 'text__wc_ella_otros', label: 'Closet de ella — otros' }, detailNotes: { key: 'text__wc_ella_notas', label: 'Closet de ella — notas' } }], decisions: [{ key: 'radio__dorm1-tv-group', label: 'TV', detail: { key: 'text__dorm1_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__dorm1_notas', label: 'Notas' }] },
     { name: 'Dormitorio Cristóbal', priorityKey: 'scale__cristobal_prioridad', chips: [{ key: 'pills__cristobal-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__cristobal_muebles_otros', label: 'Otros muebles' } }], decisions: [{ key: 'radio__cristobal-evol-group', label: 'Mob. evolutivo', detail: { key: 'text__cristobal_evol_notas', label: 'Anotaciones mob. evolutivo' } }], notes: [{ key: 'text__cristobal_edad', label: 'Edad' }, { key: 'text__cristobal_notas', label: 'Notas' }] },
     { name: 'Family Room', priorityKey: 'scale__family_prioridad', chips: [{ key: 'pills__family-muebles', label: 'Muebles a reutilizar', detail: { key: 'text__family_muebles_otros', label: 'Otros muebles' } }, { key: 'pills__family-uso', label: 'Uso principal', detail: { key: 'text__family_uso_otros', label: 'Otros usos' } }], decisions: [{ key: 'radio__family-tv-group', label: 'TV', detail: { key: 'text__family_tv_detalle', label: 'Detalle TV' } }], notes: [{ key: 'text__family_notas', label: 'Notas' }] },
