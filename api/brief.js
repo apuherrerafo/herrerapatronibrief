@@ -1,5 +1,4 @@
-// API para guardar y leer briefs en Vercel Blob (datos compartidos entre cliente y backoffice)
-import { put, get, list, del } from '@vercel/blob';
+import { put, list, del } from '@vercel/blob';
 
 const PREFIX = 'briefs/';
 const CORS_HEADERS = {
@@ -39,7 +38,7 @@ export async function POST(request) {
       submittedAt: submittedAt || null,
     };
     await put(pathname, JSON.stringify(payload), {
-      access: 'private',
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: true,
@@ -55,32 +54,23 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user');
+    const { blobs } = await list({ prefix: PREFIX, limit: 100 });
+
     if (user) {
-      const pathname = PREFIX + user + '.json';
-      let data;
-      try {
-        const result = await get(pathname, { access: 'private' });
-        if (!result) return json({ error: 'not found' }, 404);
-        const stream = result.stream || result.body;
-        const text = stream ? await new Response(stream).text() : '';
-        data = JSON.parse(text || '{}');
-      } catch (e) {
-        if (e && (e.message || '').toLowerCase().includes('not found')) return json({ error: 'not found' }, 404);
-        throw e;
-      }
+      const target = blobs.find(b => b.pathname === PREFIX + user + '.json');
+      if (!target) return json({ error: 'not found' }, 404);
+      const res = await fetch(target.url);
+      const data = JSON.parse(await res.text());
       return json(data);
     }
-    const { blobs } = await list({ prefix: PREFIX, limit: 100 });
+
     const out = {};
     for (const b of blobs) {
       const name = b.pathname.slice(PREFIX.length).replace(/\.json$/, '');
       try {
-        const result = await get(b.pathname, { access: 'private' });
-        if (result && result.statusCode !== 404) {
-          const stream = result.stream || result.body;
-          const text = stream ? await new Response(stream).text() : '';
-          out[name] = JSON.parse(text || '{}');
-        }
+        const res = await fetch(b.url);
+        const data = JSON.parse(await res.text());
+        out[name] = data;
       } catch (_) {}
     }
     return json(out);
@@ -95,10 +85,10 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user');
     if (!user) return json({ error: 'user required' }, 400);
-    const pathname = PREFIX + user + '.json';
-    try {
-      await del(pathname, { access: 'private' });
-    } catch (_) {}
+    const { blobs } = await list({ prefix: PREFIX + user + '.json', limit: 1 });
+    if (blobs.length) {
+      await del(blobs[0].url);
+    }
     return json({ ok: true });
   } catch (err) {
     console.error('DELETE /api/brief', err);
