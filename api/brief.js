@@ -1,6 +1,5 @@
-import { put, list, del } from '@vercel/blob';
+import { createClient } from '@supabase/supabase-js';
 
-const PREFIX = 'briefs/';
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
@@ -12,6 +11,13 @@ function json(data, status = 200) {
     status,
     headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
   });
+}
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+  return createClient(url, key);
 }
 
 export async function OPTIONS() {
@@ -30,19 +36,21 @@ export async function POST(request) {
     if (!user || state === undefined) {
       return json({ error: 'user and state required' }, 400);
     }
-    const pathname = PREFIX + user + '.json';
-    const payload = {
-      state,
+    const supabase = getSupabase();
+    const row = {
+      user_id: user,
+      state: state,
       report: report || null,
-      savedAt: savedAt || Date.now(),
-      submittedAt: submittedAt || null,
+      saved_at: savedAt ?? Date.now(),
+      submitted_at: submittedAt ?? null,
     };
-    await put(pathname, JSON.stringify(payload), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
+    const { error } = await supabase.from('briefs').upsert(row, {
+      onConflict: 'user_id',
     });
+    if (error) {
+      console.error('POST /api/brief', error);
+      return json({ error: error.message }, 500);
+    }
     return json({ ok: true });
   } catch (err) {
     console.error('POST /api/brief', err);
@@ -54,24 +62,42 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user');
-    const { blobs } = await list({ prefix: PREFIX, limit: 100 });
+    const supabase = getSupabase();
 
     if (user) {
-      const target = blobs.find(b => b.pathname === PREFIX + user + '.json');
-      if (!target) return json({ error: 'not found' }, 404);
-      const res = await fetch(target.url);
-      const data = JSON.parse(await res.text());
-      return json(data);
+      const { data, error } = await supabase
+        .from('briefs')
+        .select('state, report, saved_at, submitted_at')
+        .eq('user_id', user)
+        .maybeSingle();
+      if (error) {
+        console.error('GET /api/brief?user=', error);
+        return json({ error: error.message }, 500);
+      }
+      if (!data) return json({ error: 'not found' }, 404);
+      return json({
+        state: data.state,
+        report: data.report,
+        savedAt: data.saved_at,
+        submittedAt: data.submitted_at,
+      });
     }
 
+    const { data: rows, error } = await supabase
+      .from('briefs')
+      .select('user_id, state, report, saved_at, submitted_at');
+    if (error) {
+      console.error('GET /api/brief', error);
+      return json({ error: error.message }, 500);
+    }
     const out = {};
-    for (const b of blobs) {
-      const name = b.pathname.slice(PREFIX.length).replace(/\.json$/, '');
-      try {
-        const res = await fetch(b.url);
-        const data = JSON.parse(await res.text());
-        out[name] = data;
-      } catch (_) {}
+    for (const r of rows || []) {
+      out[r.user_id] = {
+        state: r.state,
+        report: r.report,
+        savedAt: r.saved_at,
+        submittedAt: r.submitted_at,
+      };
     }
     return json(out);
   } catch (err) {
@@ -85,9 +111,11 @@ export async function DELETE(request) {
     const { searchParams } = new URL(request.url);
     const user = searchParams.get('user');
     if (!user) return json({ error: 'user required' }, 400);
-    const { blobs } = await list({ prefix: PREFIX + user + '.json', limit: 1 });
-    if (blobs.length) {
-      await del(blobs[0].url);
+    const supabase = getSupabase();
+    const { error } = await supabase.from('briefs').delete().eq('user_id', user);
+    if (error) {
+      console.error('DELETE /api/brief', error);
+      return json({ error: error.message }, 500);
     }
     return json({ ok: true });
   } catch (err) {
