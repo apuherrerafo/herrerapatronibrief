@@ -52,11 +52,17 @@ export async function GET(request) {
     const user = searchParams.get('user');
     if (user) {
       const pathname = PREFIX + user + '.json';
-      const result = await get(pathname, { access: 'private' });
-      if (!result || result.statusCode === 404) return json({ error: 'not found' }, 404);
-      const stream = result.stream || result.body;
-      const text = stream ? await new Response(stream).text() : '';
-      const data = JSON.parse(text || '{}');
+      let data;
+      try {
+        const result = await get(pathname, { access: 'private' });
+        if (!result) return json({ error: 'not found' }, 404);
+        const stream = result.stream || result.body;
+        const text = stream ? await new Response(stream).text() : '';
+        data = JSON.parse(text || '{}');
+      } catch (e) {
+        if (e && (e.message || '').toLowerCase().includes('not found')) return json({ error: 'not found' }, 404);
+        throw e;
+      }
       return json(data);
     }
     const { blobs } = await list({ prefix: PREFIX, limit: 100 });

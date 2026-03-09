@@ -373,7 +373,8 @@ const USER_LABELS = { cervera: 'Cervera', herrera: 'Herrera', patroni: 'Patroni'
 let pendingClearUser = null;
 window.__briefsApiCache = null;
 function useBriefApi() {
-  return window.location.hostname.indexOf('vercel.app') !== -1;
+  var h = window.location.hostname;
+  return h !== 'localhost' && h !== '127.0.0.1';
 }
 function loadBriefsFromApi(cb) {
   if (!useBriefApi()) { if (cb) cb(); return; }

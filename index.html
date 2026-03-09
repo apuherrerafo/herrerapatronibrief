@@ -1048,7 +1048,8 @@ const SESSION_KEY = 'hp_session';
 
 // En Vercel los briefs se guardan también en el servidor para que el backoffice los vea
 function useBriefApi() {
-  return window.location.hostname.indexOf('vercel.app') !== -1;
+  var h = window.location.hostname;
+  return h !== 'localhost' && h !== '127.0.0.1';
 }
 function apiSyncBrief(user, payload) {
   if (!useBriefApi() || !user) return;
@@ -1056,7 +1057,7 @@ function apiSyncBrief(user, payload) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user: user, state: payload.state, report: payload.report || null, savedAt: payload.savedAt || Date.now(), submittedAt: payload.submittedAt || null }),
-  }).catch(function() {});
+  }).then(function(r) { if (!r.ok) console.warn('Brief API save failed', r.status); }).catch(function(e) { console.warn('Brief API save error', e); });
 }
 
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
