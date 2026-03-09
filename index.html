@@ -150,6 +150,8 @@ body {
 }
 .save-btn:hover { border-color: var(--text); }
 .save-btn.saved { background: var(--text); color: #fff; border-color: var(--text); }
+.sync-toast { font-size: 10px; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.sync-toast.show { opacity: 1; color: var(--green, #0f7b5c); }
 
 .progress-bar { position: fixed; top: 52px; left: 0; right: 0; z-index: 99; height: 1.5px; background: var(--border); }
 .progress-fill { height: 100%; background: var(--text); width: 0%; transition: width 0.3s ease; }
@@ -479,6 +481,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
   <span class="topbar-logo">Herrera &amp; Patroni</span>
   <div class="topbar-right">
     <span class="topbar-user" id="topbarUser"></span>
+    <span class="sync-toast" id="syncToast" aria-live="polite">Guardado en servidor</span>
     <button class="save-btn" id="saveBtn" onclick="saveProgress()">Guardar</button>
   </div>
 </div>
@@ -1051,13 +1054,23 @@ function useBriefApi() {
   var h = window.location.hostname;
   return h !== 'localhost' && h !== '127.0.0.1';
 }
+function showSyncOk() {
+  var el = document.getElementById('syncToast');
+  if (!el) return;
+  el.classList.add('show');
+  clearTimeout(showSyncOk._t);
+  showSyncOk._t = setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
 function apiSyncBrief(user, payload) {
   if (!useBriefApi() || !user) return;
   fetch('/api/brief', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ user: user, state: payload.state, report: payload.report || null, savedAt: payload.savedAt || Date.now(), submittedAt: payload.submittedAt || null }),
-  }).then(function(r) { if (!r.ok) console.warn('Brief API save failed', r.status); }).catch(function(e) { console.warn('Brief API save error', e); });
+  }).then(function(r) {
+    if (r.ok) showSyncOk();
+    else console.warn('Brief API save failed', r.status);
+  }).catch(function(e) { console.warn('Brief API save error', e); });
 }
 
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
@@ -1156,6 +1169,15 @@ function applyRoute() {
         const tu = document.getElementById('topbarUser');
         if (tu) tu.textContent = (currentUser || '').toUpperCase();
         loadProgress();
+        if (useBriefApi()) {
+          setTimeout(function() {
+            if (!currentUser) return;
+            var state = collectState();
+            if (state && Object.keys(state).length) {
+              apiSyncBrief(currentUser, { state: state, report: buildReport(state), savedAt: Date.now() });
+            }
+          }, 800);
+        }
       } else {
         if (successScreen) { successScreen.style.display = 'flex'; successScreen.classList.add('show'); }
       }
