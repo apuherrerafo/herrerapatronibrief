@@ -1480,11 +1480,38 @@ function clearFormState() {
 
 function loadProgress() {
   if (!currentUser) return;
-  const raw = localStorage.getItem('hp_brief_' + currentUser);
+
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(currentUser))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data && !data.error && data.state && Object.keys(data.state).length) {
+          // Servidor tiene datos: restaurar y actualizar localStorage
+          clearFormState();
+          restoreState(data.state);
+          localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state: data.state, savedAt: data.savedAt || Date.now() }));
+          if (data.report) localStorage.setItem('hp_brief_' + currentUser + '_report', data.report);
+        } else {
+          // Servidor vacío: usar localStorage local
+          loadFromLocal();
+        }
+      })
+      .catch(function() {
+        // Error de red: usar localStorage local
+        loadFromLocal();
+      });
+  } else {
+    loadFromLocal();
+  }
+}
+
+function loadFromLocal() {
+  if (!currentUser) return;
+  var raw = localStorage.getItem('hp_brief_' + currentUser);
   if (raw) {
     try {
-      const parsed = JSON.parse(raw);
-      const state = parsed && parsed.state != null ? parsed.state : parsed;
+      var parsed = JSON.parse(raw);
+      var state = parsed && parsed.state != null ? parsed.state : parsed;
       restoreState(state);
     } catch(e) {}
   } else {
