@@ -1046,6 +1046,19 @@ let loginMode = 'client'; // 'client' | 'admin'
 
 const SESSION_KEY = 'hp_session';
 
+// En Vercel los briefs se guardan también en el servidor para que el backoffice los vea
+function useBriefApi() {
+  return window.location.hostname.indexOf('vercel.app') !== -1;
+}
+function apiSyncBrief(user, payload) {
+  if (!useBriefApi() || !user) return;
+  fetch('/api/brief', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user: user, state: payload.state, report: payload.report || null, savedAt: payload.savedAt || Date.now(), submittedAt: payload.submittedAt || null }),
+  }).catch(function() {});
+}
+
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
 var viewOnlyUser = (function() {
   var h = (window.location.hash || '').replace(/^#/, '');
@@ -1395,7 +1408,9 @@ function restoreState(state) {
 function saveProgress() {
   if (!currentUser) return;
   const state = collectState();
-  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: Date.now() }));
+  const savedAt = Date.now();
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: savedAt }));
+  apiSyncBrief(currentUser, { state, report: buildReport(state), savedAt: savedAt });
   const btn = document.getElementById('saveBtn');
   btn.textContent = 'Guardado ✓';
   btn.classList.add('saved');
@@ -1408,7 +1423,9 @@ function saveProgress() {
 function saveProgressSilent() {
   if (!currentUser) return;
   const state = collectState();
-  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: Date.now() }));
+  const savedAt = Date.now();
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: savedAt }));
+  apiSyncBrief(currentUser, { state, report: buildReport(state), savedAt: savedAt });
 }
 
 function clearFormState() {
@@ -1552,6 +1569,7 @@ document.getElementById('briefForm').addEventListener('submit', async (e) => {
   // Also save progress so backoffice shows this state until next Guardar
   localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: now }));
   localStorage.setItem(`hp_brief_${currentUser}_report`, report);
+  apiSyncBrief(currentUser, { state, report: report, savedAt: now, submittedAt: new Date().toISOString() });
 
   setTimeout(() => { window.location.hash = 'success'; }, 600);
 });

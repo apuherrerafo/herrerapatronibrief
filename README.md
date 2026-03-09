@@ -46,6 +46,27 @@ hp-brief/
 
 URLs en producción: `tudominio.vercel.app/` (brief) y `tudominio.vercel.app/admin` (admin).
 
+## Backoffice en Vercel: que el admin vea los briefs de todos
+
+En local todo se guarda solo en el navegador. En **Vercel** los briefs se copian también al servidor (Vercel Blob) para que el backoffice muestre los datos de cada cliente aunque hayan entrado desde otro dispositivo.
+
+**Pasos (solo una vez):**
+
+1. Entra a [vercel.com](https://vercel.com) e inicia sesión.
+2. Abre tu proyecto **herrerapatronibrief** (o el nombre que tenga).
+3. Arriba ve a la pestaña **Storage** (o en el menú del proyecto: **Storage**).
+4. Pulsa **Create Database** (o **Add Storage** / **Connect Store**).
+5. Elige **Blob** y sigue el asistente:
+   - Nombre del store: por ejemplo `briefs`.
+   - Entorno: **Production** (y si quieres también Preview).
+   - Crear.
+6. Cuando pregunte **a qué proyecto enlazar**, selecciona **herrerapatronibrief** y confirma.
+7. Vercel añadirá la variable **BLOB_READ_WRITE_TOKEN** al proyecto. No hace falta copiarla a mano.
+8. Haz un **nuevo deploy**: en la pestaña **Deployments** → los tres puntos del último deploy → **Redeploy**, o sube un cambio a GitHub para que se despliegue solo.
+
+Después de eso, cuando un cliente guarde o envíe el brief en la URL de Vercel, los datos se guardarán en Blob y tú los verás en el backoffice al entrar a tu URL de Vercel.
+
 ## Datos
 
-Todo se guarda en `localStorage` del navegador, aislado por usuario. El admin puede ver y limpiar los briefs de cada cliente.
+- **En local:** todo en `localStorage` del navegador. El admin ve/limpia briefs solo en ese navegador.
+- **En Vercel:** además de `localStorage`, se envía una copia a la API (Blob) para que el backoffice muestre los briefs de todos los clientes.

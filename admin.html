@@ -371,6 +371,17 @@ const USERS = ['cervera', 'herrera', 'patroni'];
 const USER_LABELS = { cervera: 'Cervera', herrera: 'Herrera', patroni: 'Patroni' };
 
 let pendingClearUser = null;
+window.__briefsApiCache = null;
+function useBriefApi() {
+  return window.location.hostname.indexOf('vercel.app') !== -1;
+}
+function loadBriefsFromApi(cb) {
+  if (!useBriefApi()) { if (cb) cb(); return; }
+  fetch('/api/brief').then(function(r) { return r.json(); }).then(function(data) {
+    window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
+    if (cb) cb();
+  }).catch(function() { window.__briefsApiCache = {}; if (cb) cb(); });
+}
 
 function escapeHtml(str) {
   if (str == null) return '';
@@ -387,6 +398,7 @@ function handleLogin() {
     document.getElementById('topbar').style.display = 'flex';
     document.getElementById('mainApp').style.display = 'block';
     renderUserCards();
+    loadBriefsFromApi(function() { renderUserCards(); });
   } else {
     document.getElementById('loginError').textContent = 'Código incorrecto.';
     document.getElementById('loginInput').value = '';
@@ -404,6 +416,20 @@ function logout() {
 
 // ── GET USER DATA ──
 function getUserData(user) {
+  const api = window.__briefsApiCache && window.__briefsApiCache[user];
+  if (api) {
+    const state = api.state || null;
+    const report = api.report || null;
+    const submittedAt = api.submittedAt ? (typeof api.submittedAt === 'number' ? api.submittedAt : new Date(api.submittedAt).getTime()) : null;
+    return {
+      hasSubmission: !!api.submittedAt,
+      hasDraft: !!state && !api.submittedAt,
+      isEmpty: !state,
+      report,
+      state,
+      submittedAt,
+    };
+  }
   const report = localStorage.getItem(`hp_brief_${user}_report`);
   const progressRaw = localStorage.getItem(`hp_brief_${user}`);
   let progressState = null;
@@ -432,7 +458,6 @@ function getUserData(user) {
   if (latestFinal) {
     try { finalState = JSON.parse(localStorage.getItem(latestFinal)).state || null; } catch(e) {}
   }
-  // Mostrar siempre el estado más reciente: si el borrador se guardó después del último envío, usar borrador
   const useProgress = progressSavedAt > latestTime && progressState != null;
   const state = useProgress ? progressState : (finalState || progressState);
   return {
@@ -645,7 +670,10 @@ function executeClear() {
   const overlay = document.getElementById('modalOverlay');
   const user = overlay.dataset.clearUser || pendingClearUser;
   if (!user) return;
-  // Borrar todas las claves de este usuario
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' }).catch(function() {});
+    if (window.__briefsApiCache) delete window.__briefsApiCache[user];
+  }
   localStorage.removeItem('hp_brief_' + user);
   localStorage.removeItem('hp_brief_' + user + '_report');
   const keysToRemove = [];
