@@ -38,7 +38,7 @@ export async function POST(request) {
       submittedAt: submittedAt || null,
     };
     await put(pathname, JSON.stringify(payload), {
-      access: 'private',
+      access: 'public',
       contentType: 'application/json',
       addRandomSuffix: false,
       allowOverwrite: true,
@@ -59,9 +59,7 @@ export async function GET(request) {
     if (user) {
       const target = blobs.find(b => b.pathname === PREFIX + user + '.json');
       if (!target) return json({ error: 'not found' }, 404);
-      const res = await fetch(target.url, {
-        headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-      });
+      const res = await fetch(target.url);
       const data = JSON.parse(await res.text());
       return json(data);
     }
@@ -70,9 +68,7 @@ export async function GET(request) {
     for (const b of blobs) {
       const name = b.pathname.slice(PREFIX.length).replace(/\.json$/, '');
       try {
-        const res = await fetch(b.url, {
-          headers: { Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}` },
-        });
+        const res = await fetch(b.url);
         const data = JSON.parse(await res.text());
         out[name] = data;
       } catch (_) {}
