@@ -21,7 +21,12 @@ export async function OPTIONS() {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      return json({ error: 'Invalid JSON body', detail: String(parseErr.message) }, 400);
+    }
     const { user, state, report, savedAt, submittedAt } = body || {};
     if (!user || state === undefined) {
       return json({ error: 'user and state required' }, 400);

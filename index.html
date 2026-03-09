@@ -152,6 +152,8 @@ body {
 .save-btn.saved { background: var(--text); color: #fff; border-color: var(--text); }
 .sync-toast { font-size: 10px; color: var(--muted); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
 .sync-toast.show { opacity: 1; color: var(--green, #0f7b5c); }
+.sync-toast.sync-err { color: var(--red, #c53030); }
+.sync-hint { font-size: 9px; color: var(--muted); letter-spacing: 0.05em; margin-right: 0.5rem; }
 
 .progress-bar { position: fixed; top: 52px; left: 0; right: 0; z-index: 99; height: 1.5px; background: var(--border); }
 .progress-fill { height: 100%; background: var(--text); width: 0%; transition: width 0.3s ease; }
@@ -482,6 +484,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
   <div class="topbar-right">
     <span class="topbar-user" id="topbarUser"></span>
     <span class="sync-toast" id="syncToast" aria-live="polite">Guardado en servidor</span>
+    <span class="sync-hint" id="syncHint" style="display:none">Se guarda en servidor</span>
     <button class="save-btn" id="saveBtn" onclick="saveProgress()">Guardar</button>
   </div>
 </div>
@@ -1057,9 +1060,19 @@ function useBriefApi() {
 function showSyncOk() {
   var el = document.getElementById('syncToast');
   if (!el) return;
+  el.textContent = 'Guardado en servidor';
+  el.classList.remove('sync-err');
   el.classList.add('show');
   clearTimeout(showSyncOk._t);
   showSyncOk._t = setTimeout(function() { el.classList.remove('show'); }, 2500);
+}
+function showSyncError(msg) {
+  var el = document.getElementById('syncToast');
+  if (!el) return;
+  el.textContent = 'No se pudo guardar en servidor (' + (msg || 'error') + ')';
+  el.classList.add('show', 'sync-err');
+  clearTimeout(showSyncOk._t);
+  showSyncOk._t = setTimeout(function() { el.classList.remove('show', 'sync-err'); }, 5000);
 }
 function apiSyncBrief(user, payload) {
   if (!useBriefApi() || !user) return;
@@ -1069,8 +1082,8 @@ function apiSyncBrief(user, payload) {
     body: JSON.stringify({ user: user, state: payload.state, report: payload.report || null, savedAt: payload.savedAt || Date.now(), submittedAt: payload.submittedAt || null }),
   }).then(function(r) {
     if (r.ok) showSyncOk();
-    else console.warn('Brief API save failed', r.status);
-  }).catch(function(e) { console.warn('Brief API save error', e); });
+    else showSyncError(r.status);
+  }).catch(function(e) { showSyncError(e.message || 'red'); });
 }
 
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
@@ -1170,6 +1183,8 @@ function applyRoute() {
         if (tu) tu.textContent = (currentUser || '').toUpperCase();
         loadProgress();
         if (useBriefApi()) {
+          var hint = document.getElementById('syncHint');
+          if (hint) hint.style.display = 'inline';
           setTimeout(function() {
             if (!currentUser) return;
             var state = collectState();
@@ -1494,6 +1509,12 @@ document.addEventListener('click', function(e) {
 });
 // Redundancia cada 15s por si no se dispararon eventos
 setInterval(function() { if (currentUser) saveProgressSilent(); }, 15000);
+// Al volver a la pestaña, sincronizar por si el timer no disparó (p. ej. en móvil)
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && currentUser && useBriefApi()) {
+    saveProgressSilent();
+  }
+});
 
 // ═══════════════════════════════════════════════
 // BUILD EMAIL / STORAGE BODY
