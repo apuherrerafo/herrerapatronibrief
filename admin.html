@@ -333,10 +333,14 @@ body {
 <!-- MAIN -->
 <div class="wrapper" id="mainApp" style="display:none">
 
-  <div class="page-header">
-    <p class="page-eyebrow">Panel Administrativo</p>
-    <h1 class="page-title">Briefs <em>recibidos</em></h1>
+  <div class="page-header" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem">
+    <div>
+      <p class="page-eyebrow">Panel Administrativo</p>
+      <h1 class="page-title">Briefs <em>recibidos</em></h1>
+    </div>
+    <button type="button" class="btn-copy" id="btnRefrescarBriefs" onclick="refrescarBriefs()" style="flex-shrink:0">Refrescar</button>
   </div>
+  <p class="page-eyebrow" style="margin-top:-0.5rem;margin-bottom:1rem">Los datos vienen del servidor. Si no ves lo último guardado desde otra PC o móvil, pulsa Refrescar.</p>
 
   <div class="users-grid" id="usersGrid"></div>
 
@@ -378,10 +382,20 @@ function useBriefApi() {
 }
 function loadBriefsFromApi(cb) {
   if (!useBriefApi()) { if (cb) cb(); return; }
+  var btn = document.getElementById('btnRefrescarBriefs');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
   fetch('/api/brief').then(function(r) { return r.json(); }).then(function(data) {
     window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
+    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
     if (cb) cb();
-  }).catch(function() { window.__briefsApiCache = {}; if (cb) cb(); });
+  }).catch(function() {
+    window.__briefsApiCache = {};
+    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+    if (cb) cb();
+  });
+}
+function refrescarBriefs() {
+  loadBriefsFromApi(function() { renderUserCards(); });
 }
 
 function escapeHtml(str) {
@@ -532,6 +546,19 @@ function getBriefText(user) {
 }
 
 function viewBrief(user) {
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user)).then(function(r) { return r.json(); }).then(function(data) {
+      if (data && !data.error) {
+        window.__briefsApiCache = window.__briefsApiCache || {};
+        window.__briefsApiCache[user] = data;
+      }
+      renderBriefView(user);
+    }).catch(function() { renderBriefView(user); });
+  } else {
+    renderBriefView(user);
+  }
+}
+function renderBriefView(user) {
   const label = USER_LABELS[user];
   const data = getUserData(user);
   document.getElementById('viewerTitle').textContent = 'Brief · ' + label;

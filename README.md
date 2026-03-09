@@ -62,7 +62,10 @@ En local todo se guarda solo en el navegador. En **Vercel** los briefs se copian
    - Crear.
 6. Cuando pregunte **a qué proyecto enlazar**, selecciona **herrerapatronibrief** y confirma.
 7. Vercel añadirá la variable **BLOB_READ_WRITE_TOKEN** al proyecto. No hace falta copiarla a mano.
-8. Haz un **nuevo deploy**: en la pestaña **Deployments** → los tres puntos del último deploy → **Redeploy**, o sube un cambio a GitHub para que se despliegue solo.
+8. **Conectar el store al proyecto:** En la página del store "briefs", busca **"Connect to Project"** o **"Link to Project"** y selecciona **herrerapatronibrief**. Así Vercel añade `BLOB_READ_WRITE_TOKEN` al proyecto.
+9. Haz un **nuevo deploy**: **Deployments** → menú (⋯) del último deploy → **Redeploy**. (Sin redeploy la función no ve la variable nueva.)
+
+**Si sigue sin funcionar:** Entra a **Settings** → **Environment Variables**. Debe existir `BLOB_READ_WRITE_TOKEN` y tener marcado **Production**. Si no está, en **Storage** → tu store "briefs" → **Connect to Project** de nuevo y vuelve a hacer **Redeploy**.
 
 Después de eso, cuando un cliente guarde o envíe el brief en la URL de Vercel, los datos se guardarán en Blob y tú los verás en el backoffice al entrar a tu URL de Vercel.
 
