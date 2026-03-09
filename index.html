@@ -1051,6 +1051,7 @@ let pendingClearUser = null;
 let loginMode = 'client'; // 'client' | 'admin'
 
 const SESSION_KEY = 'hp_session';
+var briefLoaded = false;
 
 // En Vercel los briefs se guardan también en el servidor para que el backoffice los vea
 function useBriefApi() {
@@ -1182,17 +1183,6 @@ function applyRoute() {
         const tu = document.getElementById('topbarUser');
         if (tu) tu.textContent = (currentUser || '').toUpperCase();
         loadProgress();
-        if (useBriefApi()) {
-          var hint = document.getElementById('syncHint');
-          if (hint) hint.style.display = 'inline';
-          setTimeout(function() {
-            if (!currentUser) return;
-            var state = collectState();
-            if (state && Object.keys(state).length) {
-              apiSyncBrief(currentUser, { state: state, report: buildReport(state), savedAt: Date.now() });
-            }
-          }, 800);
-        }
       } else {
         if (successScreen) { successScreen.style.display = 'flex'; successScreen.classList.add('show'); }
       }
@@ -1445,6 +1435,7 @@ function restoreState(state) {
 // ═══════════════════════════════════════════════
 function saveProgress() {
   if (!currentUser) return;
+  if (!briefLoaded) return;
   const state = collectState();
   const savedAt = Date.now();
   localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: savedAt }));
@@ -1459,11 +1450,11 @@ function saveProgress() {
 }
 
 function saveProgressSilent() {
-  if (!currentUser) return;
-  const state = collectState();
-  const savedAt = Date.now();
-  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state, savedAt: savedAt }));
-  apiSyncBrief(currentUser, { state, report: buildReport(state), savedAt: savedAt });
+  if (!currentUser || !briefLoaded) return;
+  var state = collectState();
+  var savedAt = Date.now();
+  localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state: state, savedAt: savedAt }));
+  apiSyncBrief(currentUser, { state: state, report: buildReport(state), savedAt: savedAt });
 }
 
 function clearFormState() {
@@ -1480,28 +1471,28 @@ function clearFormState() {
 
 function loadProgress() {
   if (!currentUser) return;
-
+  briefLoaded = false;
   if (useBriefApi()) {
     fetch('/api/brief?user=' + encodeURIComponent(currentUser))
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (data && !data.error && data.state && Object.keys(data.state).length) {
-          // Servidor tiene datos: restaurar y actualizar localStorage
           clearFormState();
           restoreState(data.state);
           localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state: data.state, savedAt: data.savedAt || Date.now() }));
           if (data.report) localStorage.setItem('hp_brief_' + currentUser + '_report', data.report);
         } else {
-          // Servidor vacío: usar localStorage local
           loadFromLocal();
         }
+        briefLoaded = true;
       })
       .catch(function() {
-        // Error de red: usar localStorage local
         loadFromLocal();
+        briefLoaded = true;
       });
   } else {
     loadFromLocal();
+    briefLoaded = true;
   }
 }
 
