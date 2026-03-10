@@ -1090,17 +1090,17 @@ function apiSyncBrief(user, payload) {
 
 window.__briefsApiCache = null;
 function loadBriefsFromApi(cb) {
-  if (!useBriefApi()) { if (cb) cb(); return; }
+  if (!useBriefApi()) { if (cb) try { cb(); } catch (e) {} return; }
   var btn = document.getElementById('btnRefrescarBriefs');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
   fetch('/api/brief', { cache: 'no-store' }).then(function(r) { return r.json(); }).then(function(data) {
     window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
     if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) cb();
+    if (cb) try { cb(); } catch (e) {}
   }).catch(function() {
-    window.__briefsApiCache = {};
+    window.__briefsApiCache = window.__briefsApiCache || {};
     if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) cb();
+    if (cb) try { cb(); } catch (e) {}
   });
 }
 function refrescarBriefs() { loadBriefsFromApi(function() { renderUserCards(); }); }
@@ -1214,7 +1214,8 @@ function applyRoute() {
       if (loginScreen) loginScreen.classList.add('hidden');
       if (adminTopbar) adminTopbar.style.display = 'flex';
       if (adminApp) adminApp.style.display = 'block';
-      loadBriefsFromApi(function() { renderUserCards(); });
+      renderUserCards();
+      loadBriefsFromApi(function() { try { renderUserCards(); } catch (e) {} });
     } else {
       setLoginMode('admin');
     }
@@ -1245,7 +1246,8 @@ function handleLogin() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('adminTopbar').style.display = 'flex';
       document.getElementById('adminApp').style.display = 'block';
-      loadBriefsFromApi(function() { renderUserCards(); });
+      renderUserCards();
+      loadBriefsFromApi(function() { try { renderUserCards(); } catch (e) {} });
     } else {
       document.getElementById('loginError').textContent = 'Código incorrecto.';
       document.getElementById('loginInput').value = '';
