@@ -1208,30 +1208,18 @@ document.addEventListener('DOMContentLoaded', function bindLoginUI() {
   if (btnCancelModal) btnCancelModal.addEventListener('click', function() {
     if (typeof window.closeModal === 'function') window.closeModal();
   });
-  var usersGrid = document.getElementById('usersGrid');
-  if (usersGrid) {
-    usersGrid.addEventListener('click', function(e) {
-      var viewBtn = e.target.closest('.btn-view');
-      if (viewBtn && !viewBtn.disabled) {
-        var card = viewBtn.closest('.user-card');
-        if (card && card.dataset.user) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof window.viewBrief === 'function') window.viewBrief(card.dataset.user);
-          return;
-        }
-      }
-      var clearBtn = e.target.closest('.btn-clear');
-      if (clearBtn && !clearBtn.disabled) {
-        var card = clearBtn.closest('.user-card');
-        if (card && card.dataset.user) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof window.confirmClear === 'function') window.confirmClear(card.dataset.user);
-        }
-      }
-    });
-  }
+  document.addEventListener('click', function(e) {
+    var viewBtn = e.target.closest('.btn-view');
+    if (viewBtn && !viewBtn.disabled) {
+      var card = viewBtn.closest('.user-card');
+      if (card && card.dataset.user) { viewBrief(card.dataset.user); return; }
+    }
+    var clearBtn = e.target.closest('.btn-clear');
+    if (clearBtn && !clearBtn.disabled) {
+      var card = clearBtn.closest('.user-card');
+      if (card && card.dataset.user) { confirmClear(card.dataset.user); return; }
+    }
+  });
 });
 
 // En Vercel los briefs se guardan también en el servidor para que el backoffice los vea
