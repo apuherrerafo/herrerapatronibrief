@@ -471,7 +471,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
       <div class="login-box">
         <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-        <button class="login-btn" onclick="handleLogin()">Ingresar</button>
+        <button type="button" class="login-btn" onclick="handleLogin()">Ingresar</button>
         <p class="login-error" id="loginError"></p>
       </div>
     </div>
@@ -1185,8 +1185,10 @@ function applyRoute() {
   closeViewer();
   closeModal();
 
-  document.getElementById('loginError').textContent = '';
-  document.getElementById('loginInput').value = '';
+  var loginErrEl = document.getElementById('loginError');
+  var loginInpEl = document.getElementById('loginInput');
+  if (loginErrEl) loginErrEl.textContent = '';
+  if (loginInpEl) loginInpEl.value = '';
 
   if (hash === 'brief' || hash === 'success') {
     let session = null;
@@ -1237,38 +1239,45 @@ if (viewOnlyUser) {
 
 // ── LOGIN: mismo home — CERVERA/HERRERA/PATRONI = formulario, "cafeteria" = backoffice ──
 function handleLogin() {
-  const raw = document.getElementById('loginInput').value.trim();
-  const valUpper = raw.toUpperCase();
-  const valLower = raw.toLowerCase();
-  if (loginMode === 'admin') {
-    if (valLower === ADMIN_CODE) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('adminTopbar').style.display = 'flex';
-      document.getElementById('adminApp').style.display = 'block';
-      renderUserCards();
-      loadBriefsFromApi(function() { try { renderUserCards(); } catch (e) {} });
+  try {
+    var inputEl = document.getElementById('loginInput');
+    var errorEl = document.getElementById('loginError');
+    if (!inputEl) return;
+    var raw = (inputEl.value || '').trim();
+    var valUpper = raw.toUpperCase();
+    var valLower = raw.toLowerCase();
+    if (loginMode === 'admin') {
+      if (valLower === ADMIN_CODE) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('adminTopbar').style.display = 'flex';
+        document.getElementById('adminApp').style.display = 'block';
+        renderUserCards();
+        loadBriefsFromApi(function() { try { renderUserCards(); } catch (e) {} });
+      } else {
+        if (errorEl) errorEl.textContent = 'Código incorrecto.';
+        inputEl.value = '';
+      }
     } else {
-      document.getElementById('loginError').textContent = 'Código incorrecto.';
-      document.getElementById('loginInput').value = '';
+      if (valLower === ADMIN_CODE) {
+        if (errorEl) errorEl.textContent = 'Use la ruta de administración.';
+        inputEl.value = '';
+      } else if (CODES[valUpper]) {
+        currentUser = CODES[valUpper];
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: currentUser }));
+        window.location.hash = 'brief';
+      } else {
+        if (errorEl) errorEl.textContent = 'Código incorrecto. Intente de nuevo.';
+        inputEl.value = '';
+      }
     }
-  } else {
-    if (valLower === ADMIN_CODE) {
-      document.getElementById('loginError').textContent = 'Use la ruta de administración.';
-      document.getElementById('loginInput').value = '';
-    } else if (CODES[valUpper]) {
-      currentUser = CODES[valUpper];
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: currentUser }));
-      window.location.hash = 'brief';
-    } else {
-      document.getElementById('loginError').textContent = 'Código incorrecto. Intente de nuevo.';
-      document.getElementById('loginInput').value = '';
-    }
+  } catch (e) {
+    var err = document.getElementById('loginError');
+    if (err) err.textContent = 'Error: ' + (e.message || 'vuelve a intentar');
   }
 }
-document.getElementById('loginInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') handleLogin();
-});
+var _loginInput = document.getElementById('loginInput');
+if (_loginInput) _loginInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') handleLogin(); });
 
 function logout() {
   localStorage.removeItem(SESSION_KEY);
