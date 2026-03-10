@@ -1881,7 +1881,7 @@ function getUserData(user) {
     var submittedAt = api.submittedAt ? (typeof api.submittedAt === 'number' ? api.submittedAt : new Date(api.submittedAt).getTime()) : null;
     return { hasSubmission: !!api.submittedAt, hasDraft: !!state && !api.submittedAt, isEmpty: !state, report: report, state: state, submittedAt: submittedAt };
   }
-  const report = localStorage.getItem('hp_brief_' + user + '_report');
+  const reportText = localStorage.getItem('hp_brief_' + user + '_report');
   const progressRaw = localStorage.getItem('hp_brief_' + user);
   let progressState = null;
   let progressSavedAt = 0;
@@ -1916,7 +1916,7 @@ function getUserData(user) {
     hasSubmission: latestTime > 0,
     hasDraft: !!progressRaw && latestTime === 0,
     isEmpty: !progressRaw && latestTime === 0,
-    report: report || null,
+    report: reportText || null,
     state,
     submittedAt: latestTime || null,
   };
