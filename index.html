@@ -471,7 +471,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
       <div class="login-box">
         <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-        <button type="button" class="login-btn" onclick="handleLogin()">Ingresar</button>
+        <button type="button" class="login-btn" id="loginBtn">Ingresar</button>
         <p class="login-error" id="loginError"></p>
       </div>
     </div>
@@ -1229,12 +1229,12 @@ function applyRoute() {
   }
 }
 
-window.addEventListener('hashchange', function() { if (viewOnlyUser) return; applyRoute(); });
+window.addEventListener('hashchange', function() { if (viewOnlyUser) return; try { applyRoute(); } catch (err) { console.error('hashchange', err); } });
 if (viewOnlyUser) {
-  initViewOnly(viewOnlyUser);
+  try { initViewOnly(viewOnlyUser); } catch (err) { console.error('initViewOnly', err); }
 } else {
   if (!window.location.hash) window.location.hash = 'login';
-  applyRoute();
+  try { applyRoute(); } catch (err) { console.error('applyRoute', err); }
 }
 
 // ── LOGIN: mismo home — CERVERA/HERRERA/PATRONI = formulario, "cafeteria" = backoffice ──
@@ -1276,8 +1276,17 @@ function handleLogin() {
     if (err) err.textContent = 'Error: ' + (e.message || 'vuelve a intentar');
   }
 }
-var _loginInput = document.getElementById('loginInput');
-if (_loginInput) _loginInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') handleLogin(); });
+function attachLoginHandlers() {
+  var input = document.getElementById('loginInput');
+  var btn = document.getElementById('loginBtn');
+  if (input) input.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
+  if (btn) btn.addEventListener('click', function(e) { e.preventDefault(); handleLogin(); });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachLoginHandlers);
+} else {
+  attachLoginHandlers();
+}
 
 function logout() {
   localStorage.removeItem(SESSION_KEY);
