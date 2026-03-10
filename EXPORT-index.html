@@ -1,3 +1,4 @@
+=== index.html ===
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,13 +6,155 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Brief · H&P Design Studio</title>
 <script>
-// ── HEAD SCRIPT ──
-// Solo delegación (pills, radio, scale, age, input/change) y stub de handleLogin
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
+    var CODES = { 'CERVERA': 'cervera', 'HERRERA': 'herrera', 'PATRONI': 'patroni' };
+    var ADMIN = 'cafeteria';
+    var SESSION_KEY = 'hp_session';
+    function doLogin() {
+      var inp = document.getElementById('loginInput');
+      if (!inp) return;
+      var raw = (inp.value || '').trim(), upper = raw.toUpperCase(), lower = raw.toLowerCase();
+      var errEl = document.getElementById('loginError');
+      var isAdminMode = (window.location.hash === '#admin');
+      if (isAdminMode) {
+        if (lower === ADMIN) {
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
+          var ls = document.getElementById('loginScreen');
+          var at = document.getElementById('adminTopbar');
+          var aa = document.getElementById('adminApp');
+          if (ls) { ls.classList.add('hidden'); ls.style.display = 'none'; }
+          if (at) at.style.display = 'flex';
+          if (aa) aa.style.display = 'block';
+          var grid = document.getElementById('usersGrid');
+          if (grid) {
+            grid.innerHTML = '';
+            [{ u: 'cervera', label: 'Cervera' }, { u: 'herrera', label: 'Herrera' }, { u: 'patroni', label: 'Patroni' }].forEach(function(o) {
+              var card = document.createElement('div');
+              card.className = 'user-card';
+              card.dataset.user = o.u;
+              card.innerHTML = '<div class="user-card-header"><span class="user-name">' + o.label + '</span><span class="user-status empty">Sin datos</span></div><p class="user-meta">Sin actividad registrada</p><div class="user-actions"><button type="button" class="btn-view" disabled>Ver brief</button><button type="button" class="btn-clear" disabled>Limpiar</button></div>';
+              grid.appendChild(card);
+            });
+          }
+          if (typeof window.renderUserCards === 'function') window.renderUserCards();
+          if (typeof window.loadBriefsFromApi === 'function') window.loadBriefsFromApi(function() { if (typeof window.renderUserCards === 'function') window.renderUserCards(); });
+          setTimeout(function() { if (typeof window.renderUserCards === 'function') window.renderUserCards(); }, 150);
+        } else {
+          if (errEl) errEl.textContent = 'Código incorrecto.';
+          inp.value = '';
+        }
+      } else {
+        if (lower === ADMIN) {
+          if (errEl) errEl.textContent = 'Use la ruta de administración.';
+          inp.value = '';
+        } else if (CODES[upper]) {
+          var user = CODES[upper];
+          localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: user }));
+          window.location.hash = 'brief';
+          function showBriefForm() {
+            if (typeof window.__setCurrentUser === 'function') window.__setCurrentUser(user);
+            var ls = document.getElementById('loginScreen');
+            var topbar = document.getElementById('topbar');
+            var progressBar = document.getElementById('progressBar');
+            var mainApp = document.getElementById('mainApp');
+            var tu = document.getElementById('topbarUser');
+            if (ls) { ls.classList.add('hidden'); ls.style.display = 'none'; }
+            if (topbar) topbar.style.display = 'flex';
+            if (progressBar) progressBar.style.display = 'block';
+            if (mainApp) mainApp.style.display = 'block';
+            if (tu) tu.textContent = (user || '').toUpperCase();
+            if (typeof window.loadProgress === 'function') window.loadProgress();
+            setTimeout(function() { if (typeof window.__setBriefLoaded === 'function') window.__setBriefLoaded(true); }, 400);
+          }
+          if (typeof window.applyRoute === 'function') {
+            window.applyRoute();
+            var mainApp = document.getElementById('mainApp');
+            if (mainApp && mainApp.style.display !== 'block') showBriefForm();
+          } else {
+            showBriefForm();
+          }
+        } else {
+          if (errEl) errEl.textContent = 'Código incorrecto. Intente de nuevo.';
+          inp.value = '';
+        }
+      }
+    }
+    var btn = document.getElementById('loginBtn');
+    var link = document.getElementById('loginBackofficeBtn');
+    var inp = document.getElementById('loginInput');
+    if (btn) btn.onclick = doLogin;
+    if (link) link.onclick = function(e) {
+      e.preventDefault();
+      window.location.hash = 'admin';
+      var sub = document.getElementById('loginSubtitle');
+      if (sub) sub.textContent = 'Código de acceso administrativo';
+      if (typeof window.applyRoute === 'function') window.applyRoute();
+    };
+    if (inp) inp.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); doLogin(); } };
+    window.handleLogin = doLogin;
+
+    // Botones del brief: delegación en head para que siempre esté registrada
     var radioSubMapBrief = { 'sala-tv-group': { show: ['Sí'], target: 'sala-tv-detail' }, 'sala-veg-group': { show: ['Sí'], target: 'sala-veg-detail' }, 'dorm1-tv-group': { show: ['Sí'], target: 'dorm1-tv-detail' }, 'family-tv-group': { show: ['Sí'], target: 'family-tv-detail' }, 'puertas-grupo': { show: ['Cambiar todas', 'Cambiar solo algunas'], target: 'puertas-detail' } };
     document.addEventListener('click', function(e) {
       if (document.body.classList.contains('viewonly')) return;
+      if (e.target.id === 'btnRefrescarBriefs' || e.target.closest('#btnRefrescarBriefs')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.refrescarBriefs === 'function') window.refrescarBriefs();
+        return;
+      }
+      if (e.target.id === 'btnLogout' || e.target.closest('#btnLogout')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.logout === 'function') window.logout();
+        return;
+      }
+      var viewBtn = e.target.closest('.btn-view');
+      if (viewBtn && !viewBtn.disabled) {
+        var card = viewBtn.closest('.user-card');
+        if (card && card.dataset.user) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.viewBrief === 'function') window.viewBrief(card.dataset.user);
+          return;
+        }
+      }
+      var clearBtn = e.target.closest('.btn-clear');
+      if (clearBtn && !clearBtn.disabled) {
+        var card = clearBtn.closest('.user-card');
+        if (card && card.dataset.user) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (typeof window.confirmClear === 'function') window.confirmClear(card.dataset.user);
+          return;
+        }
+      }
+      if (e.target.id === 'saveBtn' || e.target.closest('#saveBtn')) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof window.saveProgress === 'function') {
+          window.saveProgress();
+        } else {
+          try {
+            var s = JSON.parse(localStorage.getItem('hp_session') || '{}');
+            var u = s && s.user;
+            if (u) {
+              var st = {};
+              document.querySelectorAll('.pill.active').forEach(function(p) {
+                var row = p.closest('.pill-row');
+                if (row && row.id) { var k = 'pills__' + row.id; if (!st[k]) st[k] = []; st[k].push(p.dataset.val || ''); }
+              });
+              document.querySelectorAll('textarea, input[type=text]').forEach(function(f) { if (f.name && f.value) st['text__' + f.name] = f.value.trim(); });
+              document.querySelectorAll('.radio-item.active').forEach(function(r) { var g = r.closest('.radio-group'); if (g && g.id) st['radio__' + g.id] = r.dataset.val || ''; });
+              document.querySelectorAll('.scale-btn.active').forEach(function(b) { if (b.dataset.name) st['scale__' + b.dataset.name] = b.dataset.val || ''; });
+              localStorage.setItem('hp_brief_' + u, JSON.stringify({ state: st, savedAt: Date.now() }));
+              var b = document.getElementById('saveBtn'); if (b) { b.textContent = 'Guardado ✓'; setTimeout(function() { if (b) b.textContent = 'Guardar'; }, 2000); }
+            }
+          } catch (err) {}
+        }
+        return;
+      }
       var pill = e.target.closest('.pill');
       if (pill) {
         e.preventDefault();
@@ -83,7 +226,6 @@
       }
     }, true);
   });
-  window.handleLogin = function() {};
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -553,7 +695,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
       <div class="login-box">
         <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-        <button type="button" class="login-btn" id="loginBtn">Ingresar</button>
+        <button type="button" class="login-btn" id="loginBtn" onclick="window.handleLogin && window.handleLogin()">Ingresar</button>
         <p class="login-error" id="loginError"></p>
       </div>
     </div>
@@ -567,7 +709,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <span class="topbar-user" id="topbarUser"></span>
     <span class="sync-toast" id="syncToast" aria-live="polite">Guardado en servidor</span>
     <span class="sync-hint" id="syncHint" style="display:none">Se guarda en servidor</span>
-    <button class="save-btn" id="saveBtn">Guardar</button>
+    <button class="save-btn" id="saveBtn" onclick="saveProgress()">Guardar</button>
   </div>
 </div>
 <div class="progress-bar" id="progressBar" style="display:none">
@@ -1085,7 +1227,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <span class="topbar-tag">Admin</span>
   </div>
   <div class="topbar-right">
-    <button type="button" class="logout-btn" id="btnRefrescarBriefs" onclick="refrescarBriefs()" style="margin-right:0.5rem">Refrescar</button>
+    <button type="button" class="logout-btn" id="btnRefrescarBriefs" style="margin-right:0.5rem">Refrescar</button>
     <button type="button" class="logout-btn" id="btnLogout">Salir</button>
   </div>
 </div>
@@ -1100,7 +1242,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <h2 class="brief-viewer-title" id="viewerTitle">Brief</h2>
       <div class="brief-viewer-actions">
         <button type="button" class="btn-copy" id="btnCopyBrief">Copiar texto</button>
-        <button type="button" class="btn-close" id="btnCloseViewer">Cerrar</button>
+        <button type="button" class="btn-close" onclick="closeViewer()">Cerrar</button>
       </div>
     </div>
     <div class="brief-content" id="briefContent"></div>
@@ -1112,7 +1254,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <p class="modal-desc" id="modalDesc">¿Confirmas que quieres borrar el brief de este usuario? Esta acción no se puede deshacer.</p>
     <div class="modal-actions">
       <button type="button" class="btn-confirm-clear" id="btnConfirmClear">Sí, limpiar</button>
-      <button type="button" class="btn-cancel" id="btnCancelModal">Cancelar</button>
+      <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -1148,11 +1290,15 @@ function handleLogin() {
   var raw = (inputEl.value || '').trim();
   var valUpper = raw.toUpperCase();
   var valLower = raw.toLowerCase();
-  if (loginMode === 'admin') {
-    if (valLower === ADMIN_CODE) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
-      window.location.hash = 'admin';
-      if (typeof window.applyRoute === 'function') window.applyRoute();
+    if (loginMode === 'admin') {
+      if (valLower === ADMIN_CODE) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
+        var ls = document.getElementById('loginScreen');
+        if (ls) { ls.classList.add('hidden'); ls.style.display = 'none'; }
+        document.getElementById('adminTopbar').style.display = 'flex';
+        document.getElementById('adminApp').style.display = 'block';
+      renderUserCards();
+      loadBriefsFromApi(function() { renderUserCards(); });
     } else {
       if (errorEl) errorEl.textContent = 'Código incorrecto.';
       inputEl.value = '';
@@ -1165,7 +1311,6 @@ function handleLogin() {
       currentUser = CODES[valUpper];
       localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: currentUser }));
       window.location.hash = 'brief';
-      if (typeof window.applyRoute === 'function') window.applyRoute();
     } else {
       if (errorEl) errorEl.textContent = 'Código incorrecto. Intente de nuevo.';
       inputEl.value = '';
@@ -1174,64 +1319,22 @@ function handleLogin() {
 }
 window.handleLogin = handleLogin;
 
+// Asegurar clics cuando el DOM esté listo (por si algo falla después)
 document.addEventListener('DOMContentLoaded', function bindLoginUI() {
   var btn = document.getElementById('loginBtn');
   if (btn) btn.addEventListener('click', function() { handleLogin(); });
   var link = document.getElementById('loginBackofficeBtn');
   if (link) link.addEventListener('click', function(e) {
     e.preventDefault();
+    e.stopPropagation();
     window.location.hash = 'admin';
+    if (typeof setLoginMode === 'function') setLoginMode('admin');
+    if (typeof window.applyRoute === 'function') window.applyRoute();
   });
   var inp = document.getElementById('loginInput');
   if (inp) inp.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') { e.preventDefault(); handleLogin(); }
   });
-  var saveBtn = document.getElementById('saveBtn');
-  if (saveBtn) saveBtn.addEventListener('click', function() {
-    if (typeof window.saveProgress === 'function') window.saveProgress();
-  });
-  var btnRefrescar = document.getElementById('btnRefrescarBriefs');
-  if (btnRefrescar) btnRefrescar.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (typeof window.refrescarBriefs === 'function') window.refrescarBriefs();
-  });
-  var btnLogout = document.getElementById('btnLogout');
-  if (btnLogout) btnLogout.addEventListener('click', function(e) {
-    e.preventDefault();
-    if (typeof window.logout === 'function') window.logout();
-  });
-  var btnCloseViewer = document.getElementById('btnCloseViewer');
-  if (btnCloseViewer) btnCloseViewer.addEventListener('click', function() {
-    if (typeof window.closeViewer === 'function') window.closeViewer();
-  });
-  var btnCancelModal = document.getElementById('btnCancelModal');
-  if (btnCancelModal) btnCancelModal.addEventListener('click', function() {
-    if (typeof window.closeModal === 'function') window.closeModal();
-  });
-  var usersGrid = document.getElementById('usersGrid');
-  if (usersGrid) {
-    usersGrid.addEventListener('click', function(e) {
-      var viewBtn = e.target.closest('.btn-view');
-      if (viewBtn && !viewBtn.disabled) {
-        var card = viewBtn.closest('.user-card');
-        if (card && card.dataset.user) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof window.viewBrief === 'function') window.viewBrief(card.dataset.user);
-          return;
-        }
-      }
-      var clearBtn = e.target.closest('.btn-clear');
-      if (clearBtn && !clearBtn.disabled) {
-        var card = clearBtn.closest('.user-card');
-        if (card && card.dataset.user) {
-          e.preventDefault();
-          e.stopPropagation();
-          if (typeof window.confirmClear === 'function') window.confirmClear(card.dataset.user);
-        }
-      }
-    });
-  }
 });
 
 // En Vercel los briefs se guardan también en el servidor para que el backoffice los vea
@@ -1420,6 +1523,12 @@ if (viewOnlyUser) {
   try { applyRoute(); } catch (err) { console.error('applyRoute', err); }
 }
 
+// ── LOGIN: Enter key (handleLogin ya definido arriba) ──
+(function() {
+  var inp = document.getElementById('loginInput');
+  if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); handleLogin(); } });
+})();
+
 function logout() {
   localStorage.removeItem(SESSION_KEY);
   currentUser = null;
@@ -1588,7 +1697,7 @@ window.__saveProgressImpl = saveProgress;
 window.saveProgress = saveProgress;
 
 function saveProgressSilent() {
-  if (!currentUser) return;
+  if (!currentUser || !briefLoaded) return;
   try {
     var state = collectState();
     var savedAt = Date.now();
@@ -1685,7 +1794,7 @@ function loadFromLocal() {
 // Auto-guardado: al cambiar algo se guarda en 1.5s (así el backoffice siempre tiene lo último)
 var autoSaveTimer = null;
 function scheduleAutoSave() {
-  if (!currentUser) return;
+  if (!currentUser || !briefLoaded) return;
   clearTimeout(autoSaveTimer);
   autoSaveTimer = setTimeout(function() { saveProgressSilent(); }, 800);
 }
@@ -1698,7 +1807,7 @@ if (form) {
 }
 // (Los clics en .pill, .radio-item, .scale-btn, .age-btn se manejan por delegación arriba y llaman scheduleAutoSave)
 // Redundancia cada 15s por si no se dispararon eventos
-setInterval(function() { if (currentUser) saveProgressSilent(); }, 15000);
+setInterval(function() { if (currentUser && briefLoaded) saveProgressSilent(); }, 15000);
 // Al volver a la pestaña, recargar del servidor primero
 document.addEventListener('visibilitychange', function() {
   if (document.visibilityState === 'visible' && currentUser && useBriefApi()) {

@@ -1,0 +1,240 @@
+================================================================================
+EXPORTACIÓN COMPLETA DE ARCHIVOS — Proyecto Brief H&P
+Generado para revisión externa. Contenido exacto tal como está en disco.
+================================================================================
+
+=== vercel.json ===
+{
+  "buildCommand": "npm install && npm run build:css",
+  "outputDirectory": ".",
+  "installCommand": "npm install",
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "routes": [
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/", "dest": "/index.html" }
+  ]
+}
+
+=== package.json ===
+{
+  "name": "herrerapatronibrief",
+  "private": true,
+  "scripts": {
+    "build:css": "npx @tailwindcss/cli -i ./src/input.css -o ./assets/main.css --minify",
+    "build": "npm run build:css",
+    "serve": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@vercel/blob": "^0.26.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.0.0",
+    "tailwindcss": "^4.0.0"
+  }
+}
+
+=== server.js ===
+#!/usr/bin/env node
+// Servidor estático mínimo (solo módulos de Node). Uso: node server.js
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = process.env.PORT || 8081;
+const ROOT = __dirname;
+
+const MIME = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.svg': 'image/svg+xml',
+  '.pdf': 'application/pdf',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+};
+
+const server = http.createServer((req, res) => {
+  let url = req.url === '/' ? '/index.html' : req.url;
+  url = url.split('?')[0];
+  const file = path.join(ROOT, url);
+  const ext = path.extname(file);
+  const type = MIME[ext] || 'application/octet-stream';
+
+  fs.readFile(file, (err, data) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+        return;
+      }
+      res.writeHead(500);
+      res.end('Error');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': type });
+    res.end(data);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log('Serving!');
+  console.log('Local: http://localhost:' + PORT + '/');
+  console.log('Admin: http://localhost:' + PORT + '/admin');
+});
+
+=== api/brief.js ===
+import { createClient } from '@supabase/supabase-js';
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+};
+
+function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  });
+}
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set');
+  return createClient(url, key);
+}
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
+export async function POST(request) {
+  try {
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseErr) {
+      return json({ error: 'Invalid JSON body', detail: String(parseErr.message) }, 400);
+    }
+    const { user, state, report, savedAt, submittedAt } = body || {};
+    if (!user || state === undefined) {
+      return json({ error: 'user and state required' }, 400);
+    }
+    const supabase = getSupabase();
+    const row = {
+      user_id: user,
+      state: state,
+      report: report || null,
+      saved_at: savedAt ?? Date.now(),
+      submitted_at: submittedAt ?? null,
+    };
+    const { error } = await supabase.from('briefs').upsert(row, {
+      onConflict: 'user_id',
+    });
+    if (error) {
+      console.error('POST /api/brief', error);
+      return json({ error: error.message }, 500);
+    }
+    return json({ ok: true });
+  } catch (err) {
+    console.error('POST /api/brief', err);
+    return json({ error: String(err.message) }, 500);
+  }
+}
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const user = searchParams.get('user');
+    const supabase = getSupabase();
+
+    if (user) {
+      const { data, error } = await supabase
+        .from('briefs')
+        .select('state, report, saved_at, submitted_at')
+        .eq('user_id', user)
+        .maybeSingle();
+      if (error) {
+        console.error('GET /api/brief?user=', error);
+        return json({ error: error.message }, 500);
+      }
+      if (!data) {
+        return json({ state: {}, report: null, savedAt: null, submittedAt: null });
+      }
+      return json({
+        state: data.state,
+        report: data.report,
+        savedAt: data.saved_at,
+        submittedAt: data.submitted_at,
+      });
+    }
+
+    const { data: rows, error } = await supabase
+      .from('briefs')
+      .select('user_id, state, report, saved_at, submitted_at');
+    if (error) {
+      console.error('GET /api/brief', error);
+      return json({ error: error.message }, 500);
+    }
+    const out = {};
+    for (const r of rows || []) {
+      out[r.user_id] = {
+        state: r.state,
+        report: r.report,
+        savedAt: r.saved_at,
+        submittedAt: r.submitted_at,
+      };
+    }
+    return json(out);
+  } catch (err) {
+    console.error('GET /api/brief', err);
+    return json({ error: String(err.message) }, 500);
+  }
+}
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const user = searchParams.get('user');
+    if (!user) return json({ error: 'user required' }, 400);
+    const supabase = getSupabase();
+    const { error } = await supabase.from('briefs').delete().eq('user_id', user);
+    if (error) {
+      console.error('DELETE /api/brief', error);
+      return json({ error: error.message }, 500);
+    }
+    return json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/brief', err);
+    return json({ error: String(err.message) }, 500);
+  }
+}
+
+================================================================================
+index.html (completo)
+================================================================================
+El contenido completo de index.html está en el archivo: EXPORT-index.html
+(primera línea: "=== index.html ===", resto: código exacto del archivo.)
+
+================================================================================
+admin.html (completo)
+================================================================================
+El contenido completo de admin.html está en el archivo: EXPORT-admin.html
+(primera línea: "=== admin.html ===", resto: código exacto del archivo.)
+
+================================================================================
+RESUMEN DE ARCHIVOS EXPORTADOS
+================================================================================
+- EXPORT-ARCHIVOS-COMPLETOS.txt → vercel.json, package.json, server.js, api/brief.js (contenido arriba).
+- EXPORT-index.html            → index.html completo (con título).
+- EXPORT-admin.html            → admin.html completo (con título).
+================================================================================
