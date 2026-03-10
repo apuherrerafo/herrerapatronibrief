@@ -1003,6 +1003,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <span class="topbar-tag">Admin</span>
   </div>
   <div class="topbar-right">
+    <button type="button" class="logout-btn" id="btnRefrescarBriefs" onclick="refrescarBriefs()" style="margin-right:0.5rem">Refrescar</button>
     <button class="logout-btn" onclick="logout()">Salir</button>
   </div>
 </div>
@@ -1086,6 +1087,23 @@ function apiSyncBrief(user, payload) {
     else showSyncError(r.status);
   }).catch(function(e) { showSyncError(e.message || 'red'); });
 }
+
+window.__briefsApiCache = null;
+function loadBriefsFromApi(cb) {
+  if (!useBriefApi()) { if (cb) cb(); return; }
+  var btn = document.getElementById('btnRefrescarBriefs');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
+  fetch('/api/brief', { cache: 'no-store' }).then(function(r) { return r.json(); }).then(function(data) {
+    window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
+    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+    if (cb) cb();
+  }).catch(function() {
+    window.__briefsApiCache = {};
+    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+    if (cb) cb();
+  });
+}
+function refrescarBriefs() { loadBriefsFromApi(function() { renderUserCards(); }); }
 
 // ── VIEWONLY (admin abre el brief en iframe: mismo formulario, solo lectura) ──
 var viewOnlyUser = (function() {
@@ -1196,7 +1214,7 @@ function applyRoute() {
       if (loginScreen) loginScreen.classList.add('hidden');
       if (adminTopbar) adminTopbar.style.display = 'flex';
       if (adminApp) adminApp.style.display = 'block';
-      renderUserCards();
+      loadBriefsFromApi(function() { renderUserCards(); });
     } else {
       setLoginMode('admin');
     }
@@ -1227,7 +1245,7 @@ function handleLogin() {
       document.getElementById('loginScreen').classList.add('hidden');
       document.getElementById('adminTopbar').style.display = 'flex';
       document.getElementById('adminApp').style.display = 'block';
-      renderUserCards();
+      loadBriefsFromApi(function() { renderUserCards(); });
     } else {
       document.getElementById('loginError').textContent = 'Código incorrecto.';
       document.getElementById('loginInput').value = '';
@@ -1650,6 +1668,13 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 function getUserData(user) {
+  if (useBriefApi() && window.__briefsApiCache && window.__briefsApiCache[user]) {
+    var api = window.__briefsApiCache[user];
+    var state = api.state || null;
+    var report = api.report || null;
+    var submittedAt = api.submittedAt ? (typeof api.submittedAt === 'number' ? api.submittedAt : new Date(api.submittedAt).getTime()) : null;
+    return { hasSubmission: !!api.submittedAt, hasDraft: !!state && !api.submittedAt, isEmpty: !state, report: report, state: state, submittedAt: submittedAt };
+  }
   const report = localStorage.getItem('hp_brief_' + user + '_report');
   const progressRaw = localStorage.getItem('hp_brief_' + user);
   let progressState = null;
@@ -1734,6 +1759,19 @@ function getBriefText(user) {
   return lines.join('\n');
 }
 function viewBrief(user) {
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user), { cache: 'no-store' }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data && !data.error) {
+        window.__briefsApiCache = window.__briefsApiCache || {};
+        window.__briefsApiCache[user] = data;
+      }
+      renderBriefViewInner(user);
+    }).catch(function() { renderBriefViewInner(user); });
+  } else {
+    renderBriefViewInner(user);
+  }
+}
+function renderBriefViewInner(user) {
   var label = USER_LABELS[user];
   var data = getUserData(user);
   document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
@@ -1837,6 +1875,10 @@ function executeClear() {
   var overlay = document.getElementById('modalOverlay');
   var user = overlay.dataset.clearUser || pendingClearUser;
   if (!user) return;
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' }).catch(function() {});
+    if (window.__briefsApiCache) delete window.__briefsApiCache[user];
+  }
   localStorage.removeItem('hp_brief_' + user);
   localStorage.removeItem('hp_brief_' + user + '_report');
   var keysToRemove = [];
