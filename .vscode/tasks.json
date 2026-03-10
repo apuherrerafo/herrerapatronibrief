@@ -2,6 +2,23 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Servidor H&P Brief (Python)",
+      "type": "shell",
+      "command": "python3 -m http.server 8081",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".",
+          "endsPattern": "Serving HTTP"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "group": "build"
+    },
+    {
       "label": "Servidor H&P Brief",
       "type": "shell",
       "command": "node server.js",
