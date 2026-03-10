@@ -45,6 +45,14 @@
       "group": "build"
     },
     {
+      "label": "Ejecutar tests E2E (Playwright)",
+      "type": "shell",
+      "command": "zsh -i -c 'npx playwright install chromium 2>/dev/null; npm run test'",
+      "options": { "cwd": "${workspaceFolder}" },
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "group": "test"
+    },
+    {
       "label": "Subir a GitHub",
       "type": "shell",
       "command": "bash",

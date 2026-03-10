@@ -83,7 +83,6 @@
       }
     }, true);
   });
-  window.handleLogin = function() {};
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -1253,22 +1252,37 @@ function apiSyncBrief(user, payload) {
   }).then(function(r) {
     if (r.ok) showSyncOk();
     else showSyncError(r.status);
-  }).catch(function(e) { showSyncError(e.message || 'red'); });
+  }).catch(function(e) { showSyncError(e.message || 'Error de conexión'); });
 }
 
 function loadBriefsFromApi(cb) {
   if (!useBriefApi()) { if (cb) try { cb(); } catch (e) {} return; }
   var btn = document.getElementById('btnRefrescarBriefs');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
-  fetch('/api/brief', { cache: 'no-store' }).then(function(r) { return r.json(); }).then(function(data) {
-    window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
-    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) try { cb(); } catch (e) {}
-  }).catch(function() {
-    window.__briefsApiCache = window.__briefsApiCache || {};
-    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) try { cb(); } catch (e) {}
-  });
+  var apiErrorMsg = 'No se pudo cargar la lista desde el servidor. Revisa la conexión y pulsa Refrescar.';
+  fetch('/api/brief', { cache: 'no-store' })
+    .then(function(r) {
+      if (!r.ok) {
+        window.__briefsApiCache = window.__briefsApiCache || {};
+        if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+        if (cb) try { cb(); } catch (e) {}
+        alert(apiErrorMsg);
+        return;
+      }
+      return r.json();
+    })
+    .then(function(data) {
+      if (data === undefined) return;
+      window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
+      if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+      if (cb) try { cb(); } catch (e) {}
+    })
+    .catch(function() {
+      window.__briefsApiCache = window.__briefsApiCache || {};
+      if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+      if (cb) try { cb(); } catch (e) {}
+      alert(apiErrorMsg);
+    });
 }
 function refrescarBriefs() { loadBriefsFromApi(function() { renderUserCards(); }); }
 window.refrescarBriefs = refrescarBriefs;
@@ -1900,23 +1914,41 @@ function getBriefText(user) {
 }
 function viewBrief(user) {
   if (useBriefApi()) {
-    fetch('/api/brief?user=' + encodeURIComponent(user), { cache: 'no-store' }).then(function(r) { return r.json(); }).then(function(data) {
-      if (data && !data.error) {
-        window.__briefsApiCache = window.__briefsApiCache || {};
-        window.__briefsApiCache[user] = data;
-      }
-      renderBriefViewInner(user);
-    }).catch(function() { renderBriefViewInner(user); });
+    fetch('/api/brief?user=' + encodeURIComponent(user), { cache: 'no-store' })
+      .then(function(r) {
+        if (!r.ok) {
+          renderBriefViewInner(user);
+          alert('No se pudo cargar del servidor. Se muestran datos en caché si hay.');
+          return;
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        if (data === undefined) return;
+        if (data && !data.error) {
+          window.__briefsApiCache = window.__briefsApiCache || {};
+          window.__briefsApiCache[user] = data;
+        }
+        renderBriefViewInner(user);
+      })
+      .catch(function() {
+        renderBriefViewInner(user);
+        alert('No se pudo cargar del servidor. Se muestran datos en caché si hay.');
+      });
   } else {
     renderBriefViewInner(user);
   }
 }
 window.viewBrief = viewBrief;
 function renderBriefViewInner(user) {
+  var titleEl = document.getElementById('viewerTitle');
+  var content = document.getElementById('briefContent');
+  var viewer = document.getElementById('briefViewer');
+  var btnCopy = document.getElementById('btnCopyBrief');
+  if (!titleEl || !content || !viewer) return;
   var label = USER_LABELS[user];
   var data = getUserData(user);
-  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
-  var content = document.getElementById('briefContent');
+  titleEl.textContent = 'Brief · ' + label;
   if (data.state && Object.keys(data.state).length) {
     content.innerHTML = renderStateHTML(data.state);
   } else if (data.report) {
@@ -1924,9 +1956,9 @@ function renderBriefViewInner(user) {
   } else {
     content.innerHTML = '<p class="empty-state">Sin datos para este usuario.</p>';
   }
-  var viewer = document.getElementById('briefViewer');
-  if (viewer) { viewer.classList.add('show'); viewer.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-  document.getElementById('btnCopyBrief').onclick = function() { copyBrief(user); };
+  viewer.classList.add('show');
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (btnCopy) btnCopy.onclick = function() { copyBrief(user); };
 }
 function closeViewer() {
   var v = document.getElementById('briefViewer');
@@ -2019,28 +2051,38 @@ function closeModal() {
 }
 function executeClear() {
   var overlay = document.getElementById('modalOverlay');
-  var user = overlay.dataset.clearUser || pendingClearUser;
+  var user = (overlay ? overlay.dataset.clearUser : null) || pendingClearUser;
   if (!user) return;
-  if (useBriefApi()) {
-    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' }).catch(function() {});
+  function clearLocalAndRefresh() {
     if (window.__briefsApiCache) delete window.__briefsApiCache[user];
-  }
-  localStorage.removeItem('hp_brief_' + user);
-  localStorage.removeItem('hp_brief_' + user + '_report');
-  var keysToRemove = [];
-  for (var i = localStorage.length - 1; i >= 0; i--) {
-    var key = localStorage.key(i);
-    if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
-      keysToRemove.push(key);
+    localStorage.removeItem('hp_brief_' + user);
+    localStorage.removeItem('hp_brief_' + user + '_report');
+    var keysToRemove = [];
+    for (var i = localStorage.length - 1; i >= 0; i--) {
+      var key = localStorage.key(i);
+      if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+    closeModal();
+    closeViewer();
+    renderUserCards();
   }
-  keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
-  closeModal();
-  closeViewer();
-  renderUserCards();
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' })
+      .then(function(r) {
+        if (r.ok) clearLocalAndRefresh();
+        else alert('No se pudo borrar en el servidor. Reintenta o refresca.');
+      })
+      .catch(function() { alert('No se pudo borrar en el servidor. Reintenta o refresca.'); });
+  } else {
+    clearLocalAndRefresh();
+  }
 }
-document.getElementById('modalOverlay').addEventListener('click', e => {
-  if (e.target === document.getElementById('modalOverlay')) closeModal();
+var modalOverlayEl = document.getElementById('modalOverlay');
+if (modalOverlayEl) modalOverlayEl.addEventListener('click', function(e) {
+  if (e.target === modalOverlayEl) closeModal();
 });
 </script>
 </body>

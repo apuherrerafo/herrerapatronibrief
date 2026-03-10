@@ -384,15 +384,30 @@ function loadBriefsFromApi(cb) {
   if (!useBriefApi()) { if (cb) cb(); return; }
   var btn = document.getElementById('btnRefrescarBriefs');
   if (btn) { btn.disabled = true; btn.textContent = 'Cargando…'; }
-  fetch('/api/brief').then(function(r) { return r.json(); }).then(function(data) {
-    window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
-    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) cb();
-  }).catch(function() {
-    window.__briefsApiCache = {};
-    if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
-    if (cb) cb();
-  });
+  var apiErrorMsg = 'No se pudo cargar la lista desde el servidor. Revisa la conexión y pulsa Refrescar.';
+  fetch('/api/brief', { cache: 'no-store' })
+    .then(function(r) {
+      if (!r.ok) {
+        window.__briefsApiCache = window.__briefsApiCache || {};
+        if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+        if (cb) cb();
+        alert(apiErrorMsg);
+        return;
+      }
+      return r.json();
+    })
+    .then(function(data) {
+      if (data === undefined) return;
+      window.__briefsApiCache = data && typeof data === 'object' && !data.error ? data : {};
+      if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+      if (cb) cb();
+    })
+    .catch(function() {
+      window.__briefsApiCache = window.__briefsApiCache || {};
+      if (btn) { btn.disabled = false; btn.textContent = 'Refrescar'; }
+      if (cb) cb();
+      alert(apiErrorMsg);
+    });
 }
 function refrescarBriefs() {
   loadBriefsFromApi(function() { renderUserCards(); });
@@ -488,6 +503,7 @@ function getUserData(user) {
 // ── RENDER CARDS ──
 function renderUserCards() {
   const grid = document.getElementById('usersGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   USERS.forEach(user => {
     const data = getUserData(user);
@@ -547,22 +563,40 @@ function getBriefText(user) {
 
 function viewBrief(user) {
   if (useBriefApi()) {
-    fetch('/api/brief?user=' + encodeURIComponent(user)).then(function(r) { return r.json(); }).then(function(data) {
-      if (data && !data.error) {
-        window.__briefsApiCache = window.__briefsApiCache || {};
-        window.__briefsApiCache[user] = data;
-      }
-      renderBriefView(user);
-    }).catch(function() { renderBriefView(user); });
+    fetch('/api/brief?user=' + encodeURIComponent(user), { cache: 'no-store' })
+      .then(function(r) {
+        if (!r.ok) {
+          renderBriefView(user);
+          alert('No se pudo cargar del servidor. Se muestran datos en caché si hay.');
+          return;
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        if (data === undefined) return;
+        if (data && !data.error) {
+          window.__briefsApiCache = window.__briefsApiCache || {};
+          window.__briefsApiCache[user] = data;
+        }
+        renderBriefView(user);
+      })
+      .catch(function() {
+        renderBriefView(user);
+        alert('No se pudo cargar del servidor. Se muestran datos en caché si hay.');
+      });
   } else {
     renderBriefView(user);
   }
 }
 function renderBriefView(user) {
+  const titleEl = document.getElementById('viewerTitle');
+  const content = document.getElementById('briefContent');
+  const viewer = document.getElementById('briefViewer');
+  const btnCopy = document.getElementById('btnCopyBrief');
+  if (!titleEl || !content || !viewer) return;
   const label = USER_LABELS[user];
   const data = getUserData(user);
-  document.getElementById('viewerTitle').textContent = 'Brief · ' + label;
-  const content = document.getElementById('briefContent');
+  titleEl.textContent = 'Brief · ' + label;
   if (data.state && Object.keys(data.state).length) {
     content.innerHTML = renderStateHTML(data.state);
   } else if (data.report) {
@@ -570,14 +604,16 @@ function renderBriefView(user) {
   } else {
     content.innerHTML = '<p class="empty-state">Sin datos para este usuario.</p>';
   }
-  document.getElementById('briefViewer').classList.add('show');
-  document.getElementById('briefViewer').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  document.getElementById('btnCopyBrief').onclick = function() { copyBrief(user); };
+  viewer.classList.add('show');
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (btnCopy) btnCopy.onclick = function() { copyBrief(user); };
 }
 
 function closeViewer() {
-  document.getElementById('briefViewer').classList.remove('show');
-  document.getElementById('briefContent').innerHTML = '';
+  const viewer = document.getElementById('briefViewer');
+  const content = document.getElementById('briefContent');
+  if (viewer) viewer.classList.remove('show');
+  if (content) content.innerHTML = '';
 }
 
 function renderStateHTML(state) {
@@ -680,41 +716,55 @@ function copyBrief(user) {
 // ── CLEAR ──
 function confirmClear(user) {
   const overlay = document.getElementById('modalOverlay');
+  const modalDesc = document.getElementById('modalDesc');
+  const btnConfirm = document.getElementById('btnConfirmClear');
+  if (!overlay) return;
   overlay.dataset.clearUser = user;
   pendingClearUser = user;
-  document.getElementById('modalDesc').textContent =
-    '¿Confirmas que quieres borrar todos los datos del brief de ' + USER_LABELS[user] + '? Esta acción no se puede deshacer.';
+  if (modalDesc) modalDesc.textContent = '¿Confirmas que quieres borrar todos los datos del brief de ' + USER_LABELS[user] + '? Esta acción no se puede deshacer.';
   overlay.classList.add('show');
-  document.getElementById('btnConfirmClear').onclick = function() { executeClear(); };
+  if (btnConfirm) btnConfirm.onclick = function() { executeClear(); };
 }
 
 function closeModal() {
-  document.getElementById('modalOverlay').classList.remove('show');
-  document.getElementById('modalOverlay').removeAttribute('data-clear-user');
+  const overlay = document.getElementById('modalOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    overlay.removeAttribute('data-clear-user');
+  }
   pendingClearUser = null;
 }
 
 function executeClear() {
   const overlay = document.getElementById('modalOverlay');
-  const user = overlay.dataset.clearUser || pendingClearUser;
+  const user = (overlay ? overlay.dataset.clearUser : null) || pendingClearUser;
   if (!user) return;
-  if (useBriefApi()) {
-    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' }).catch(function() {});
+  function clearLocalAndRefresh() {
     if (window.__briefsApiCache) delete window.__briefsApiCache[user];
-  }
-  localStorage.removeItem('hp_brief_' + user);
-  localStorage.removeItem('hp_brief_' + user + '_report');
-  const keysToRemove = [];
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const key = localStorage.key(i);
-    if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
-      keysToRemove.push(key);
+    localStorage.removeItem('hp_brief_' + user);
+    localStorage.removeItem('hp_brief_' + user + '_report');
+    const keysToRemove = [];
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key === 'hp_brief_' + user || key === 'hp_brief_' + user + '_report' || key.indexOf('hp_brief_' + user + '_FINAL_') === 0)) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
+    closeModal();
+    closeViewer();
+    renderUserCards();
   }
-  keysToRemove.forEach(function(k) { localStorage.removeItem(k); });
-  closeModal();
-  closeViewer();
-  renderUserCards();
+  if (useBriefApi()) {
+    fetch('/api/brief?user=' + encodeURIComponent(user), { method: 'DELETE' })
+      .then(function(r) {
+        if (r.ok) clearLocalAndRefresh();
+        else alert('No se pudo borrar en el servidor. Reintenta o refresca.');
+      })
+      .catch(function() { alert('No se pudo borrar en el servidor. Reintenta o refresca.'); });
+  } else {
+    clearLocalAndRefresh();
+  }
 }
 
 document.getElementById('modalOverlay').addEventListener('click', e => {

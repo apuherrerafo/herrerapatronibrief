@@ -21,6 +21,22 @@ hp-brief/
 | Cliente Patroni | `PATRONI` |
 | Admin (backoffice) | `cafeteria` |
 
+## Tester E2E (Playwright)
+
+Hay tests automatizados que comprueban login, panel admin, errores de API y flujo Ver/Limpiar.
+
+**Cómo ejecutarlo:**
+
+- **Opción A — Tarea en Cursor:** `Ctrl+Shift+P` → "Tasks: Run Task" → **"Ejecutar tests E2E (Playwright)"**. (La primera vez descargará Chromium.)
+- **Opción B — Terminal:** Abre la terminal (`` Ctrl+` ``), ve a la carpeta del proyecto y ejecuta:
+  ```bash
+  npx playwright install chromium   # solo la primera vez
+  npm run test
+  ```
+  (Si el servidor no está en marcha, Playwright lo arranca en el puerto 8081.)
+
+- **Interfaz visual:** `npm run test:ui`
+
 ## Cómo ver el proyecto en local
 
 1. **Opción A — Tarea en Cursor:** Ctrl+Shift+P → "Run Task" → "Servidor H&P Brief". Luego abre http://localhost:8080
