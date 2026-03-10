@@ -1473,10 +1473,14 @@ function loadProgress() {
   if (!currentUser) return;
   briefLoaded = false;
   if (useBriefApi()) {
-    fetch('/api/brief?user=' + encodeURIComponent(currentUser))
-      .then(function(r) { return r.json(); })
+    fetch('/api/brief?user=' + encodeURIComponent(currentUser), { cache: 'no-store' })
+      .then(function(r) {
+        if (!r.ok) { loadFromLocal(); briefLoaded = true; return undefined; }
+        return r.json();
+      })
       .then(function(data) {
-        if (data && !data.error && data.state && Object.keys(data.state).length) {
+        if (data === undefined) return;
+        if (data && data.state && Object.keys(data.state).length) {
           clearFormState();
           restoreState(data.state);
           localStorage.setItem('hp_brief_' + currentUser, JSON.stringify({ state: data.state, savedAt: data.savedAt || Date.now() }));

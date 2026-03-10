@@ -74,7 +74,9 @@ export async function GET(request) {
         console.error('GET /api/brief?user=', error);
         return json({ error: error.message }, 500);
       }
-      if (!data) return json({ error: 'not found' }, 404);
+      if (!data) {
+        return json({ state: {}, report: null, savedAt: null, submittedAt: null });
+      }
       return json({
         state: data.state,
         report: data.report,
