@@ -12,6 +12,7 @@
     var radioSubMapBrief = { 'sala-tv-group': { show: ['Sí'], target: 'sala-tv-detail' }, 'sala-veg-group': { show: ['Sí'], target: 'sala-veg-detail' }, 'dorm1-tv-group': { show: ['Sí'], target: 'dorm1-tv-detail' }, 'family-tv-group': { show: ['Sí'], target: 'family-tv-detail' }, 'puertas-grupo': { show: ['Cambiar todas', 'Cambiar solo algunas'], target: 'puertas-detail' } };
     document.addEventListener('click', function(e) {
       if (document.body.classList.contains('viewonly')) return;
+      if (!e.target.closest('#briefForm')) return;
       var pill = e.target.closest('.pill');
       if (pill) {
         e.preventDefault();
@@ -122,6 +123,7 @@ body {
   width: 100%; height: 100%;
   object-fit: cover;
   transform: scale(1.17);
+  pointer-events: none;
 }
 #loginScreen .login-screen-overlay {
   position: absolute; inset: 0; z-index: 0;
@@ -129,10 +131,11 @@ body {
   pointer-events: none;
 }
 #loginScreen .login-screen-content {
-  position: relative; z-index: 1;
+  position: relative; z-index: 10;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   gap: 0;
+  pointer-events: auto;
 }
 #loginScreen .login-panel {
   background: rgba(255, 255, 255, 0.95);
@@ -142,6 +145,7 @@ body {
   display: flex; flex-direction: column;
   align-items: center;
   max-width: 320px;
+  pointer-events: auto;
 }
 #loginScreen.hidden { opacity: 0; pointer-events: none; transform: translateY(-12px); }
 .login-backoffice {
@@ -544,7 +548,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
     <source src="/assets/videos/Flow_delpmaspu_.mp4" type="video/mp4"/>
   </video>
   <div class="login-screen-overlay" aria-hidden="true"></div>
-  <a href="#admin" class="login-backoffice" id="loginBackofficeBtn">Backoffice</a>
+  <a href="#admin" class="login-backoffice" id="loginBackofficeBtn" onclick="event.preventDefault();window.location.hash='admin'">Backoffice</a>
   <div class="login-screen-content">
     <div class="login-panel">
       <p class="login-logo">Herrera &amp; Patroni · Design Studio</p>
@@ -552,7 +556,7 @@ body.viewonly textarea, body.viewonly input { pointer-events: none; }
       <p class="login-subtitle" id="loginSubtitle" style="margin-top:0.5rem">Ingrese su código de acceso</p>
       <div class="login-box">
         <input class="login-input" id="loginInput" type="password" placeholder="Código" autocomplete="off"/>
-        <button type="button" class="login-btn" id="loginBtn">Ingresar</button>
+        <button type="button" class="login-btn" id="loginBtn" onclick="handleLogin()">Ingresar</button>
         <p class="login-error" id="loginError"></p>
       </div>
     </div>
@@ -1141,37 +1145,87 @@ window.scheduleAutoSave = function() { if (window.__scheduleAutoSaveImpl) window
 window.__setBriefLoaded = function(v) { briefLoaded = v; };
 
 function handleLogin() {
-  var inputEl = document.getElementById('loginInput');
-  var errorEl = document.getElementById('loginError');
-  if (!inputEl) return;
-  var raw = (inputEl.value || '').trim();
-  var valUpper = raw.toUpperCase();
-  var valLower = raw.toLowerCase();
-  if (loginMode === 'admin') {
-    if (valLower === ADMIN_CODE) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
-      window.location.hash = 'admin';
-      if (typeof window.applyRoute === 'function') window.applyRoute();
-    } else {
-      if (errorEl) errorEl.textContent = 'Código incorrecto.';
-      inputEl.value = '';
+  try {
+    var inputEl = document.getElementById('loginInput');
+    var errorEl = document.getElementById('loginError');
+    if (!inputEl) { console.error('[login] loginInput not found'); return; }
+    var raw = (inputEl.value || '').trim();
+    var valUpper = raw.toUpperCase();
+    var valLower = raw.toLowerCase();
+    console.log('[login] handleLogin called, mode=' + loginMode + ', code=' + valUpper);
+
+    if (loginMode === 'admin') {
+      if (valLower === ADMIN_CODE) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'admin' }));
+        history.replaceState(null, '', '#admin');
+        _showAdminApp();
+      } else {
+        if (errorEl) errorEl.textContent = 'Código incorrecto.';
+        inputEl.value = '';
+      }
+      return;
     }
-  } else {
+
     if (valLower === ADMIN_CODE) {
       if (errorEl) errorEl.textContent = 'Use la ruta de administración.';
       inputEl.value = '';
-    } else if (CODES[valUpper]) {
-      currentUser = CODES[valUpper];
-      localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: currentUser }));
-      window.location.hash = 'brief';
-      if (typeof window.applyRoute === 'function') window.applyRoute();
-    } else {
+      return;
+    }
+
+    var user = CODES[valUpper];
+    if (!user) {
       if (errorEl) errorEl.textContent = 'Código incorrecto. Intente de nuevo.';
       inputEl.value = '';
+      return;
     }
+
+    currentUser = user;
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ type: 'client', user: user }));
+    history.replaceState(null, '', '#brief');
+    console.log('[login] showing client app for', user);
+    _showClientApp(user);
+  } catch (err) {
+    console.error('[login] handleLogin error:', err);
   }
 }
 window.handleLogin = handleLogin;
+
+function _showClientApp(user) {
+  var loginScreen = document.getElementById('loginScreen');
+  var topbar = document.getElementById('topbar');
+  var progressBar = document.getElementById('progressBar');
+  var mainApp = document.getElementById('mainApp');
+  var adminApp = document.getElementById('adminApp');
+  var adminTopbar = document.getElementById('adminTopbar');
+  var successScreen = document.getElementById('successScreen');
+  if (loginScreen) { loginScreen.classList.add('hidden'); loginScreen.style.display = 'none'; }
+  if (topbar) topbar.style.display = 'flex';
+  if (progressBar) progressBar.style.display = 'block';
+  if (mainApp) mainApp.style.display = 'block';
+  if (adminApp) adminApp.style.display = 'none';
+  if (adminTopbar) adminTopbar.style.display = 'none';
+  if (successScreen) { successScreen.classList.remove('show'); successScreen.style.display = 'none'; }
+  var tu = document.getElementById('topbarUser');
+  if (tu) tu.textContent = (user || '').toUpperCase();
+  currentUser = user;
+  loadProgress();
+  setTimeout(function() { briefLoaded = true; }, 400);
+}
+
+function _showAdminApp() {
+  var loginScreen = document.getElementById('loginScreen');
+  var adminTopbar = document.getElementById('adminTopbar');
+  var adminApp = document.getElementById('adminApp');
+  var topbar = document.getElementById('topbar');
+  var mainApp = document.getElementById('mainApp');
+  if (loginScreen) { loginScreen.classList.add('hidden'); loginScreen.style.display = 'none'; }
+  if (topbar) topbar.style.display = 'none';
+  if (mainApp) mainApp.style.display = 'none';
+  if (adminTopbar) adminTopbar.style.display = 'flex';
+  if (adminApp) adminApp.style.display = 'block';
+  renderUserCards();
+  loadBriefsFromApi(function() { try { renderUserCards(); } catch (e) {} });
+}
 
 document.addEventListener('DOMContentLoaded', function bindLoginUI() {
   var btn = document.getElementById('loginBtn');
@@ -1883,7 +1937,7 @@ function renderUserCards() {
     const card = document.createElement('div');
     card.className = 'user-card';
     card.dataset.user = user;
-    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button type="button" class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + '>Ver brief</button><button type="button" class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + '>Limpiar</button></div>';
+    card.innerHTML = '<div class="user-card-header"><span class="user-name">' + escapeHtml(label) + '</span><span class="user-status ' + statusClass + '">' + escapeHtml(statusText) + '</span></div><p class="user-meta">' + escapeHtml(metaText) + '</p><div class="user-actions"><button type="button" class="btn-view" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="typeof viewBrief===\'function\'&&viewBrief(\'' + user + '\')">Ver brief</button><button type="button" class="btn-clear" ' + (data.isEmpty ? 'disabled' : '') + ' onclick="typeof confirmClear===\'function\'&&confirmClear(\'' + user + '\')">Limpiar</button></div>';
     grid.appendChild(card);
   });
 }
